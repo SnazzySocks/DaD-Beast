@@ -1,0 +1,9 @@
+{
+    "hostname": "debian-host",
+    "domain": "local",
+    "timezone": "UTC",
+    "user_fullname": "Demo User",
+    "username": "demo",
+    "user_password": "changeme",
+    "packages": "build-essential"
+}
