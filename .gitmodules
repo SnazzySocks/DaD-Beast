@@ -1,0 +1,9 @@
+[submodule "tracker-projects/gazelle"]
+	path = tracker-projects/gazelle
+	url = https://github.com/OPSnet/Gazelle.git
+[submodule "tracker-projects/ocelot"]
+	path = tracker-projects/ocelot
+	url = https://github.com/OPSnet/Ocelot.git
+[submodule "tracker-projects/unit3d"]
+	path = tracker-projects/unit3d
+	url = https://github.com/HDInnovations/UNIT3D.git
