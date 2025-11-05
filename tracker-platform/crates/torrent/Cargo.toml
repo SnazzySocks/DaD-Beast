@@ -1,0 +1,76 @@
+[package]
+name = "torrent"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true }
+
+# Web framework
+axum = { workspace = true }
+axum-extra = { workspace = true }
+tower = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Redis for caching
+redis = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Bencode support (for .torrent files)
+serde_bencode = { workspace = true }
+
+# Hashing for info_hash calculation
+sha1 = { workspace = true }
+sha2 = "0.10"
+
+# Time handling
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Validation
+validator = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Search integration
+meilisearch-sdk = { workspace = true }
+
+# Kafka for event streaming
+rdkafka = { workspace = true }
+
+# HTTP client for external API calls
+reqwest = { workspace = true }
+
+# Byte handling
+bytes = "1.5"
+
+# Hex encoding for hashes
+hex = "0.4"
+
+# URL parsing
+url = "2.5"
+
+# File path sanitization
+path-clean = "1.0"
+
+[dev-dependencies]
+# Testing
+mockall = { workspace = true }
+fake = { workspace = true }
+tokio-test = "0.4"

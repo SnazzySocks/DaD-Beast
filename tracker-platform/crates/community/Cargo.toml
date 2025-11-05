@@ -1,0 +1,69 @@
+[package]
+name = "community"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true }
+
+# Web framework
+axum = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Redis for caching and presence
+redis = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Time handling
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Validation
+validator = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Markdown/BBCode parsing
+pulldown-cmark = "0.9"
+bbcode = "0.1"
+
+# HTML sanitization
+ammonia = "3.3"
+
+# Search integration
+meilisearch-sdk = { workspace = true }
+
+# WebSocket support
+tokio-tungstenite = "0.21"
+
+# iCalendar support
+icalendar = "0.15"
+
+# Pagination
+serde_qs = "0.12"
+
+# Regex for mentions and links
+regex = "1.10"
+lazy_static = "1.4"
+
+[dev-dependencies]
+# Testing
+mockall = { workspace = true }
+fake = { workspace = true }
+tokio-test = "0.4"

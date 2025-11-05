@@ -1,0 +1,80 @@
+[package]
+name = "app"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "tracker-platform"
+path = "src/main.rs"
+
+[dependencies]
+# Internal crates
+shared = { path = "../crates/shared" }
+auth = { path = "../crates/auth" }
+tracker = { path = "../crates/tracker" }
+torrent = { path = "../crates/torrent" }
+user = { path = "../crates/user" }
+search = { path = "../crates/search" }
+media = { path = "../crates/media" }
+community = { path = "../crates/community" }
+api = { path = "../crates/api" }
+
+# Async runtime
+tokio.workspace = true
+tokio-util.workspace = true
+
+# Web framework
+axum.workspace = true
+axum-extra.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+
+# Database
+sqlx.workspace = true
+
+# Redis
+redis.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Time handling
+chrono.workspace = true
+
+# UUID
+uuid.workspace = true
+
+# Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Logging and tracing
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-opentelemetry.workspace = true
+
+# Observability
+opentelemetry.workspace = true
+opentelemetry-otlp.workspace = true
+prometheus.workspace = true
+
+# Configuration
+config.workspace = true
+dotenvy.workspace = true
+
+# Meilisearch
+meilisearch-sdk.workspace = true
+
+# Signal handling
+signal-hook = "0.3"
+signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
+futures = "0.3"
+
+# HTTP
+hyper = { version = "1.0", features = ["full"] }
+http = "1.0"
+http-body-util = "0.1"
+
+# Metrics
+lazy_static = "1.4"

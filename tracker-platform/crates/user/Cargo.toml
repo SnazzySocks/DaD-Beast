@@ -1,0 +1,55 @@
+[package]
+name = "user"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true }
+
+# Web framework
+axum = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Redis for caching
+redis = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Time handling
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Validation
+validator = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Image processing (for avatars)
+image = "0.24"
+
+# Base64 for encoding
+base64 = "0.21"
+
+# Random number generation
+rand = "0.8"
+
+[dev-dependencies]
+# Testing
+mockall = { workspace = true }
+fake = { workspace = true }
+tokio-test = "0.4"

@@ -1,0 +1,108 @@
+[package]
+name = "api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+
+# Web framework
+axum = { workspace = true }
+axum-extra = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+# GraphQL
+async-graphql = { workspace = true }
+async-graphql-axum = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Redis for caching and rate limiting
+redis = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Time handling
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Validation
+validator = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging and tracing
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Rate limiting
+governor = { workspace = true }
+
+# HTTP client for webhooks
+reqwest = { workspace = true }
+
+# JWT for authentication
+jsonwebtoken = { workspace = true }
+
+# OpenAPI documentation
+utoipa = { version = "4.1", features = ["axum_extras", "chrono", "uuid"] }
+utoipa-swagger-ui = { version = "6.0", features = ["axum"] }
+utoipa-rapidoc = { version = "3.0", features = ["axum"] }
+utoipa-redoc = { version = "3.0", features = ["axum"] }
+
+# Futures
+futures = "0.3"
+futures-util = "0.3"
+
+# Async streams for subscriptions
+async-stream = "0.3"
+
+# HTTP types
+http = "1.0"
+
+# Byte handling
+bytes = "1.5"
+
+# Cryptography
+sha2 = "0.10"
+hmac = "0.12"
+hex = "0.4"
+base64 = "0.21"
+
+# Random generation
+rand = "0.8"
+
+# YAML support
+serde_yaml = "0.9"
+
+# Async traits
+async-trait = "0.1"
+
+# Internal crates
+shared = { path = "../shared" }
+auth = { path = "../auth" }
+torrent = { path = "../torrent" }
+user = { path = "../user" }
+community = { path = "../community" }
+search = { path = "../search" }
+media = { path = "../media" }
+tracker = { path = "../tracker" }
+
+[dev-dependencies]
+# Testing
+mockall = { workspace = true }
+fake = { workspace = true }
+tokio-test = "0.4"

@@ -1,0 +1,118 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/shared",
+    "crates/auth",
+    "crates/tracker",
+    "crates/torrent",
+    "crates/user",
+    "crates/search",
+    "crates/media",
+    "crates/community",
+    "crates/api",
+    "app",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+authors = ["Unified Tracker Platform Team"]
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+tokio-util = "0.7"
+
+# Web framework
+axum = { version = "0.7", features = ["macros", "ws"] }
+axum-extra = { version = "0.9", features = ["typed-header"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip"] }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "uuid", "chrono", "json", "migrate"] }
+sea-query = "0.30"
+sea-query-binder = { version = "0.5", features = ["sqlx-postgres"] }
+
+# Redis
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager", "cluster", "json"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+time = "0.3"
+
+# UUID
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# Password hashing
+argon2 = "0.5"
+bcrypt = "0.15"
+
+# JWT and authentication
+jsonwebtoken = "9.2"
+totp-rs = { version = "5.4", features = ["qr", "otpauth"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-opentelemetry = "0.22"
+
+# Observability
+opentelemetry = "0.21"
+opentelemetry-otlp = "0.14"
+prometheus = "0.13"
+
+# GraphQL
+async-graphql = { version = "7.0", features = ["chrono", "uuid", "dataloader"] }
+async-graphql-axum = "7.0"
+
+# Validation
+validator = { version = "0.16", features = ["derive"] }
+
+# Email
+lettre = { version = "0.11", features = ["tokio1-native-tls", "builder"] }
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json"] }
+
+# Configuration
+config = "0.13"
+dotenvy = "0.15"
+
+# Bencode (for .torrent files)
+serde_bencode = "0.2"
+sha1 = "0.10"
+
+# Meilisearch
+meilisearch-sdk = "0.25"
+
+# Kafka
+rdkafka = { version = "0.36", features = ["cmake-build", "ssl", "gssapi"] }
+
+# Rate limiting
+governor = "0.6"
+
+# Testing
+mockall = "0.12"
+fake = { version = "2.9", features = ["derive", "chrono", "uuid"] }
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
