@@ -3,6 +3,7 @@
 	import { TORRENTS_QUERY, STATS_QUERY } from '$lib/graphql/queries';
 	import TorrentCard from '$lib/components/torrent/TorrentCard.svelte';
 	import Loader from '$lib/components/common/Loader.svelte';
+	import DadJoke from '$lib/components/common/DadJoke.svelte';
 
 	const torrentsResult = query({
 		query: TORRENTS_QUERY,
@@ -30,6 +31,9 @@
 			<a href="/upload" class="btn btn-secondary">Upload Torrent</a>
 		</div>
 	</div>
+
+	<!-- Dad Joke for UX Enhancement -->
+	<DadJoke variant="default" />
 
 	<!-- Stats Section -->
 	{#if $statsResult.fetching}

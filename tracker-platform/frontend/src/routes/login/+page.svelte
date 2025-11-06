@@ -4,6 +4,7 @@
 	import { notifications } from '$lib/stores/notifications';
 	import { mutation } from '@urql/svelte';
 	import { LOGIN_MUTATION } from '$lib/graphql/mutations';
+	import DadJoke from '$lib/components/common/DadJoke.svelte';
 
 	let email = '';
 	let password = '';
@@ -54,6 +55,9 @@
 
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
 	<div class="w-full max-w-md">
+		<!-- Dad Joke for UX Enhancement -->
+		<DadJoke variant="default" />
+
 		<div class="card p-8">
 			<!-- Logo -->
 			<div class="flex justify-center mb-8">
