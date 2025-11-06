@@ -1,0 +1,29 @@
+[build]
+# Build configuration for tests
+
+[test]
+# Test-specific configuration
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[alias]
+# Test aliases
+t = "test"
+tw = "test -- --nocapture"  # test with output
+ti = "test -- --ignored"     # run ignored tests
+tq = "test --quiet"          # quiet mode
+
+# Coverage aliases
+cov = "llvm-cov"
+cov-report = "llvm-cov --html"
+cov-lcov = "llvm-cov --lcov --output-path lcov.info"
+
+# Integration test aliases
+test-int = "test --test"
+test-all = "test --all-features"
+
+[env]
+# Test environment variables
+RUST_BACKTRACE = "1"
+RUST_LOG = "debug"

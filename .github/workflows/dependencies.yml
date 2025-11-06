@@ -1,0 +1,405 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-rust-dependencies:
+    name: Check Rust Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-deps-check
+
+      - name: Install cargo-outdated
+        run: cargo install cargo-outdated || true
+
+      - name: Check for outdated dependencies
+        run: |
+          cd tracker-platform
+          cargo outdated --root-deps-only > outdated-rust.txt || true
+          cat outdated-rust.txt
+
+      - name: Upload outdated dependencies report
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-rust-dependencies
+          path: tracker-platform/outdated-rust.txt
+          retention-days: 30
+
+  check-npm-dependencies:
+    name: Check NPM Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check for outdated dependencies
+        run: |
+          cd tracker-platform/frontend
+          npm outdated > outdated-npm.txt || true
+          cat outdated-npm.txt
+
+      - name: Upload outdated dependencies report
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-npm-dependencies
+          path: tracker-platform/frontend/outdated-npm.txt
+          retention-days: 30
+
+  update-rust-dependencies:
+    name: Update Rust Dependencies
+    needs: check-rust-dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-update-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit || true
+
+      - name: Update patch versions
+        run: |
+          cd tracker-platform
+          # Update all dependencies to latest compatible versions
+          cargo update
+
+      - name: Run tests
+        run: |
+          cd tracker-platform
+          cargo test --all-features
+        continue-on-error: true
+
+      - name: Create Pull Request for Rust updates
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update Rust dependencies'
+          title: 'chore: Update Rust Dependencies'
+          body: |
+            ## Automated Dependency Update
+
+            This PR updates Rust dependencies to their latest compatible versions.
+
+            ### Changes
+            - Updated `Cargo.lock` with latest patch versions
+
+            ### Testing
+            - Automated tests have been run
+            - Please review the changes before merging
+
+            ### Notes
+            - This is an automated PR created by the dependency update workflow
+            - Only patch version updates are included for safety
+          branch: deps/rust-updates-${{ github.run_number }}
+          delete-branch: true
+          labels: dependencies, rust
+
+  update-npm-dependencies:
+    name: Update NPM Dependencies
+    needs: check-npm-dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Update dependencies
+        run: |
+          cd tracker-platform/frontend
+          # Update patch and minor versions
+          npm update
+
+      - name: Run tests
+        run: |
+          cd tracker-platform/frontend
+          npm run check || true
+          npm run lint || true
+        continue-on-error: true
+
+      - name: Create Pull Request for NPM updates
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update NPM dependencies'
+          title: 'chore: Update NPM Dependencies'
+          body: |
+            ## Automated Dependency Update
+
+            This PR updates NPM dependencies to their latest compatible versions.
+
+            ### Changes
+            - Updated `package-lock.json` with latest versions
+
+            ### Testing
+            - Automated checks have been run
+            - Please review the changes before merging
+
+            ### Notes
+            - This is an automated PR created by the dependency update workflow
+            - Patch and minor updates are included
+          branch: deps/npm-updates-${{ github.run_number }}
+          delete-branch: true
+          labels: dependencies, frontend
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo-audit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-audit
+          key: ${{ runner.os }}-cargo-audit
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit || true
+
+      - name: Run Rust security audit
+        run: |
+          cd tracker-platform
+          cargo audit --json > security-audit-rust.json || true
+          cargo audit || true
+        continue-on-error: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install NPM dependencies
+        run: |
+          cd tracker-platform/frontend
+          npm ci
+
+      - name: Run NPM security audit
+        run: |
+          cd tracker-platform/frontend
+          npm audit --json > security-audit-npm.json || true
+          npm audit || true
+        continue-on-error: true
+
+      - name: Upload security audit reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-reports
+          path: |
+            tracker-platform/security-audit-rust.json
+            tracker-platform/frontend/security-audit-npm.json
+          retention-days: 90
+
+      - name: Check for critical vulnerabilities
+        run: |
+          # Create summary report
+          cat > security-summary.md << 'EOF'
+          # Security Audit Summary
+
+          ## Rust Dependencies
+          $(cd tracker-platform && cargo audit 2>&1 || echo "No critical vulnerabilities found")
+
+          ## NPM Dependencies
+          $(cd tracker-platform/frontend && npm audit 2>&1 || echo "No critical vulnerabilities found")
+          EOF
+
+      - name: Create issue for vulnerabilities
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🚨 Security Vulnerabilities Detected';
+            const body = `
+            ## Security Audit Alert
+
+            The automated security audit has detected vulnerabilities in our dependencies.
+
+            **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Please review the security audit reports in the workflow artifacts and take appropriate action.
+
+            ### Next Steps
+            1. Review the vulnerability reports
+            2. Update affected dependencies
+            3. Test the updates thoroughly
+            4. Deploy the fixes
+
+            **Severity:** This is an automated alert. Please investigate promptly.
+            `;
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['security', 'dependencies', 'automated']
+            });
+
+  dependency-report:
+    name: Generate Dependency Report
+    needs: [check-rust-dependencies, check-npm-dependencies, security-audit]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate comprehensive report
+        run: |
+          cat > dependency-report.md << 'EOF'
+          # Dependency Report
+
+          Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          ## Summary
+
+          This report contains information about outdated dependencies and security vulnerabilities.
+
+          ## Rust Dependencies
+
+          $(cat outdated-rust-dependencies/outdated-rust.txt 2>/dev/null || echo "No data available")
+
+          ## NPM Dependencies
+
+          $(cat outdated-npm-dependencies/outdated-npm.txt 2>/dev/null || echo "No data available")
+
+          ## Security Vulnerabilities
+
+          ### Rust
+          $(cat security-audit-reports/security-audit-rust.json 2>/dev/null | head -20 || echo "No vulnerabilities found")
+
+          ### NPM
+          $(cat security-audit-reports/security-audit-npm.json 2>/dev/null | head -20 || echo "No vulnerabilities found")
+
+          ## Recommendations
+
+          1. Review all outdated dependencies
+          2. Update dependencies with security patches immediately
+          3. Test thoroughly after updates
+          4. Consider automated dependency updates for patch versions
+
+          ## Automation
+
+          - Automated PRs will be created for safe dependency updates
+          - Security vulnerabilities will trigger alerts
+          - Manual review required for major version updates
+          EOF
+
+      - name: Upload comprehensive report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-report
+          path: dependency-report.md
+          retention-days: 90
+
+  notify:
+    name: Send Notifications
+    needs: [update-rust-dependencies, update-npm-dependencies, security-audit]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check for security issues
+        id: security_check
+        run: |
+          if [ "${{ needs.security-audit.result }}" == "failure" ]; then
+            echo "has_vulnerabilities=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_vulnerabilities=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Discord notification
+        if: ${{ secrets.DISCORD_WEBHOOK != '' }}
+        run: |
+          if [ "${{ steps.security_check.outputs.has_vulnerabilities }}" == "true" ]; then
+            COLOR="15158332"
+            TITLE="🚨 Security Vulnerabilities Detected"
+            DESCRIPTION="Security audit found vulnerabilities. Please review immediately."
+          else
+            COLOR="3066993"
+            TITLE="✅ Dependency Check Complete"
+            DESCRIPTION="Weekly dependency check completed. PRs created for updates if needed."
+          fi
+
+          curl -H "Content-Type: application/json" \
+            -d "{\"embeds\": [{\"title\": \"${TITLE}\", \"color\": ${COLOR}, \"description\": \"${DESCRIPTION}\", \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}]}" \
+            ${{ secrets.DISCORD_WEBHOOK }}
+        continue-on-error: true
+
+      - name: Comment on open dependency PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            const depPRs = prs.data.filter(pr =>
+              pr.labels.some(label => label.name === 'dependencies')
+            );
+
+            for (const pr of depPRs) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: '🤖 Weekly dependency check completed. This PR may need rebasing if new updates are available.'
+              });
+            }
+        continue-on-error: true

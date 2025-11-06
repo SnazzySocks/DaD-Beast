@@ -1,0 +1,43 @@
+[package]
+name = "media"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true }
+
+# HTTP client
+reqwest = { workspace = true, features = ["gzip", "brotli", "cookies"] }
+
+# Database
+sqlx = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# HTML parsing
+scraper = "0.18"
+
+# Time handling
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Rate limiting
+governor = { workspace = true }
+
+# Regex for parsing
+regex = "1.10"
+
+# URL handling
+url = "2.5"

@@ -1,0 +1,6 @@
+[package]
+name = "tracker"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

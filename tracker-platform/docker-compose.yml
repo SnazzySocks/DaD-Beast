@@ -1,0 +1,165 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17-alpine
+    container_name: tracker-postgres
+    environment:
+      POSTGRES_USER: tracker
+      POSTGRES_PASSWORD: tracker_password
+      POSTGRES_DB: tracker
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tracker-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7.4-alpine
+    container_name: tracker-redis
+    command: redis-server --requirepass redis_password --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - tracker-network
+    restart: unless-stopped
+
+  # Meilisearch Search Engine
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    container_name: tracker-meilisearch
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-masterKey123456789}
+      MEILI_ENV: ${MEILI_ENV:-development}
+      MEILI_NO_ANALYTICS: ${MEILI_NO_ANALYTICS:-true}
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - tracker-network
+    restart: unless-stopped
+
+  # Tracker Platform Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: tracker-app
+    environment:
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
+      APP__SERVER__HOST: 0.0.0.0
+      APP__SERVER__PORT: 8080
+      APP__DATABASE__URL: postgresql://tracker:tracker_password@postgres:5432/tracker
+      APP__DATABASE__RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      APP__REDIS__URL: redis://:redis_password@redis:6379
+      APP__MEILISEARCH__URL: http://meilisearch:7700
+      APP__MEILISEARCH__API_KEY: ${MEILI_MASTER_KEY:-masterKey123456789}
+      APP__AUTH__JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-32-characters-long}
+      APP__TELEMETRY__LOG_LEVEL: ${LOG_LEVEL:-info}
+      APP__TELEMETRY__LOG_FORMAT: ${LOG_FORMAT:-pretty}
+      APP__TELEMETRY__OTLP_ENDPOINT: ${OTLP_ENDPOINT:-}
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - tracker-network
+    restart: unless-stopped
+
+  # Prometheus Metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tracker-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - app
+    networks:
+      - tracker-network
+    restart: unless-stopped
+
+  # Grafana Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tracker-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: ${GRAFANA_PLUGINS:-}
+      GF_SERVER_ROOT_URL: http://localhost:3001
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - tracker-network
+    restart: unless-stopped
+
+networks:
+  tracker-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  meilisearch_data:
+    driver: local
+  uploads_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local

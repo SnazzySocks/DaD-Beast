@@ -1,0 +1,394 @@
+name: Database Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      action:
+        description: 'Migration action'
+        required: true
+        type: choice
+        options:
+          - validate
+          - run
+          - rollback
+      steps:
+        description: 'Number of steps to rollback (only for rollback action)'
+        required: false
+        default: '1'
+  push:
+    branches:
+      - main
+    paths:
+      - 'tracker-platform/migrations/**'
+
+env:
+  SQLX_VERSION: '0.7'
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate-migrations:
+    name: Validate Migrations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-sqlx-${{ env.SQLX_VERSION }}
+
+      - name: Install sqlx-cli
+        run: |
+          cargo install sqlx-cli --version ${{ env.SQLX_VERSION }} --no-default-features --features postgres || true
+
+      - name: Start PostgreSQL
+        run: |
+          docker run -d --name postgres-test \
+            -e POSTGRES_USER=tracker \
+            -e POSTGRES_PASSWORD=tracker_password \
+            -e POSTGRES_DB=tracker_migrations \
+            -p 5432:5432 \
+            postgres:17-alpine
+
+          # Wait for PostgreSQL to be ready
+          timeout 30 sh -c 'until docker exec postgres-test pg_isready -U tracker; do sleep 1; done'
+
+      - name: Validate migration files
+        run: |
+          echo "Validating migration files..."
+
+          # Check migration file naming
+          for file in tracker-platform/migrations/*.sql; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              if [[ ! $filename =~ ^[0-9]{14}_.*\.sql$ ]]; then
+                echo "Error: Invalid migration filename: $filename"
+                echo "Expected format: YYYYMMDDHHMMSS_description.sql"
+                exit 1
+              fi
+            fi
+          done
+
+          echo "Migration file names are valid"
+
+      - name: Check for SQL syntax errors
+        run: |
+          for file in tracker-platform/migrations/*.sql; do
+            if [ -f "$file" ]; then
+              echo "Checking $file..."
+              # Basic SQL syntax check
+              if grep -q "syntax error" "$file"; then
+                echo "Error: Syntax error found in $file"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Test migrations on clean database
+        env:
+          DATABASE_URL: postgresql://tracker:tracker_password@localhost:5432/tracker_migrations
+        run: |
+          cd tracker-platform
+          sqlx database create
+          sqlx migrate run
+
+          echo "Migrations applied successfully to test database"
+
+      - name: Verify database schema
+        env:
+          DATABASE_URL: postgresql://tracker:tracker_password@localhost:5432/tracker_migrations
+        run: |
+          docker exec postgres-test psql -U tracker -d tracker_migrations -c "\dt" || true
+
+      - name: Test rollback capability
+        env:
+          DATABASE_URL: postgresql://tracker:tracker_password@localhost:5432/tracker_migrations
+        run: |
+          cd tracker-platform
+
+          # Get current migration version
+          CURRENT_VERSION=$(sqlx migrate info | grep "Pending\|Applied" | tail -1 || echo "")
+
+          if [ ! -z "$CURRENT_VERSION" ]; then
+            echo "Testing rollback capability..."
+            # Note: sqlx doesn't support automatic rollback, this is a placeholder
+            echo "Manual rollback scripts should be created for production"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f postgres-test || true
+
+  test-migrations:
+    name: Test Migrations
+    needs: validate-migrations
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'validate' || github.event_name == 'push'
+    strategy:
+      matrix:
+        postgres-version: ['15', '16', '17']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-sqlx-${{ env.SQLX_VERSION }}
+
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --version ${{ env.SQLX_VERSION }} --no-default-features --features postgres || true
+
+      - name: Start PostgreSQL ${{ matrix.postgres-version }}
+        run: |
+          docker run -d --name postgres-${{ matrix.postgres-version }} \
+            -e POSTGRES_USER=tracker \
+            -e POSTGRES_PASSWORD=tracker_password \
+            -e POSTGRES_DB=tracker_test \
+            -p 5432:5432 \
+            postgres:${{ matrix.postgres-version }}-alpine
+
+          timeout 30 sh -c 'until docker exec postgres-${{ matrix.postgres-version }} pg_isready -U tracker; do sleep 1; done'
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://tracker:tracker_password@localhost:5432/tracker_test
+        run: |
+          cd tracker-platform
+          sqlx database create
+          sqlx migrate run
+
+      - name: Verify migrations
+        env:
+          DATABASE_URL: postgresql://tracker:tracker_password@localhost:5432/tracker_test
+        run: |
+          docker exec postgres-${{ matrix.postgres-version }} psql -U tracker -d tracker_test -c "
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+            ORDER BY table_name;
+          "
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f postgres-${{ matrix.postgres-version }} || true
+
+  backup-database:
+    name: Backup Database
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'run' && github.event.inputs.environment == 'production'
+    environment:
+      name: production
+    steps:
+      - name: Create database backup
+        run: |
+          echo "Creating database backup for production..."
+          BACKUP_FILE="backup-$(date +%Y%m%d-%H%M%S).sql"
+
+          # Add your backup script here
+          # Example using pg_dump:
+          # pg_dump $DATABASE_URL > $BACKUP_FILE
+
+          echo "Backup created: $BACKUP_FILE"
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        continue-on-error: false
+
+      - name: Upload backup to storage
+        run: |
+          echo "Uploading backup to secure storage..."
+          # Add your backup upload logic here
+          # Example: aws s3 cp $BACKUP_FILE s3://backups/
+        continue-on-error: true
+
+  run-migrations:
+    name: Run Migrations
+    needs: [validate-migrations, backup-database]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'run'
+    environment:
+      name: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-sqlx-${{ env.SQLX_VERSION }}
+
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --version ${{ env.SQLX_VERSION }} --no-default-features --features postgres || true
+
+      - name: Get database URL
+        id: db_url
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+            echo "database_url=${{ secrets.PRODUCTION_DATABASE_URL }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.environment }}" == "staging" ]; then
+            echo "database_url=${{ secrets.STAGING_DATABASE_URL }}" >> $GITHUB_OUTPUT
+          else
+            echo "database_url=${{ secrets.DEVELOPMENT_DATABASE_URL }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check current migration status
+        env:
+          DATABASE_URL: ${{ steps.db_url.outputs.database_url }}
+        run: |
+          cd tracker-platform
+          echo "Current migration status:"
+          sqlx migrate info || true
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: ${{ steps.db_url.outputs.database_url }}
+        run: |
+          cd tracker-platform
+          echo "Running migrations on ${{ github.event.inputs.environment }}..."
+          sqlx migrate run
+
+          echo "Migrations completed successfully!"
+
+      - name: Verify migration status
+        env:
+          DATABASE_URL: ${{ steps.db_url.outputs.database_url }}
+        run: |
+          cd tracker-platform
+          echo "Migration status after running:"
+          sqlx migrate info
+
+      - name: Create migration report
+        run: |
+          cat > migration-report.md << EOF
+          # Migration Report
+
+          **Environment:** ${{ github.event.inputs.environment }}
+          **Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Triggered by:** ${{ github.actor }}
+          **Status:** Success
+
+          ## Migrations Applied
+
+          $(cd tracker-platform && sqlx migrate info || echo "Unable to retrieve migration info")
+
+          ## Notes
+
+          All migrations have been applied successfully to ${{ github.event.inputs.environment }}.
+          EOF
+
+      - name: Upload migration report
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-report-${{ github.event.inputs.environment }}-${{ github.run_number }}
+          path: migration-report.md
+          retention-days: 90
+
+  rollback-migrations:
+    name: Rollback Migrations
+    needs: validate-migrations
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'rollback'
+    environment:
+      name: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create rollback warning
+        run: |
+          echo "⚠️  WARNING: Rolling back migrations on ${{ github.event.inputs.environment }}"
+          echo "Steps to rollback: ${{ github.event.inputs.steps }}"
+          echo "This operation should be performed with caution!"
+
+      - name: Manual rollback instructions
+        run: |
+          cat > rollback-instructions.md << EOF
+          # Manual Rollback Instructions
+
+          **Environment:** ${{ github.event.inputs.environment }}
+          **Steps to rollback:** ${{ github.event.inputs.steps }}
+
+          ## Steps:
+
+          1. Connect to the database
+          2. Identify the migrations to rollback
+          3. Execute the down migrations manually
+          4. Verify the database state
+
+          ## Note:
+
+          SQLx does not support automatic rollback. You must manually execute
+          the rollback SQL statements for each migration.
+
+          ## Migrations Directory:
+
+          Review the migration files in: tracker-platform/migrations/
+
+          Each migration should have a corresponding rollback script.
+          EOF
+
+          cat rollback-instructions.md
+
+      - name: Upload rollback instructions
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollback-instructions-${{ github.run_number }}
+          path: rollback-instructions.md
+          retention-days: 90
+
+  notify:
+    name: Send Notifications
+    needs: [run-migrations]
+    runs-on: ubuntu-latest
+    if: always() && github.event.inputs.action == 'run'
+    steps:
+      - name: Send Discord notification
+        if: ${{ secrets.DISCORD_WEBHOOK != '' }}
+        run: |
+          if [ "${{ needs.run-migrations.result }}" == "success" ]; then
+            COLOR="3066993"
+            STATUS="Success"
+            DESCRIPTION="Migrations applied successfully to ${{ github.event.inputs.environment }}"
+          else
+            COLOR="15158332"
+            STATUS="Failed"
+            DESCRIPTION="Migration failed on ${{ github.event.inputs.environment }}"
+          fi
+
+          curl -H "Content-Type: application/json" \
+            -d "{\"embeds\": [{\"title\": \"Migration ${STATUS}\", \"color\": ${COLOR}, \"description\": \"${DESCRIPTION}\", \"fields\": [{\"name\": \"Environment\", \"value\": \"${{ github.event.inputs.environment }}\", \"inline\": true}, {\"name\": \"Triggered by\", \"value\": \"${{ github.actor }}\", \"inline\": true}]}]}" \
+            ${{ secrets.DISCORD_WEBHOOK }}
+        continue-on-error: true

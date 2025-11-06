@@ -1,0 +1,290 @@
+name: Docker Build & Push
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/tracker-platform
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./tracker-platform
+          file: ./tracker-platform/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ steps.meta.outputs.version }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
+      - name: Generate vulnerability report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          format: 'table'
+          output: 'trivy-report.txt'
+        continue-on-error: true
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-security-report
+          path: trivy-report.txt
+          retention-days: 30
+        continue-on-error: true
+
+      - name: Create image digest file
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p digests
+          echo "${{ steps.meta.outputs.version }}" > digests/version.txt
+          echo "${{ github.sha }}" > digests/commit.txt
+
+      - name: Upload digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-digests
+          path: digests
+          retention-days: 90
+
+  update-docker-compose:
+    name: Update Docker Compose
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download digest
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-digests
+          path: digests
+
+      - name: Update docker-compose.yml
+        run: |
+          VERSION=$(cat digests/version.txt)
+          COMMIT=$(cat digests/commit.txt)
+
+          # Update image tag in docker-compose.yml
+          sed -i "s|image:.*tracker-platform.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION}|g" \
+            tracker-platform/docker-compose.yml
+
+          # Add comment with commit SHA
+          echo "# Last updated: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> tracker-platform/docker-compose.yml
+          echo "# Commit: ${COMMIT}" >> tracker-platform/docker-compose.yml
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add tracker-platform/docker-compose.yml
+            git commit -m "chore: update docker-compose with new image version [skip ci]"
+            git push
+          fi
+
+  test-docker-image:
+    name: Test Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download digest
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-digests
+          path: digests
+
+      - name: Get image version
+        id: version
+        run: echo "VERSION=$(cat digests/version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Pull Docker image
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+
+      - name: Test Docker image
+        run: |
+          # Start PostgreSQL for testing
+          docker run -d --name test-postgres \
+            -e POSTGRES_USER=tracker \
+            -e POSTGRES_PASSWORD=tracker_password \
+            -e POSTGRES_DB=tracker \
+            -p 5432:5432 \
+            postgres:17-alpine
+
+          # Wait for PostgreSQL
+          sleep 10
+
+          # Start Redis for testing
+          docker run -d --name test-redis \
+            -p 6379:6379 \
+            redis:7.4-alpine
+
+          # Wait for Redis
+          sleep 5
+
+          # Run the tracker app
+          docker run -d --name tracker-test \
+            --network host \
+            -e APP__DATABASE__URL=postgresql://tracker:tracker_password@localhost:5432/tracker \
+            -e APP__REDIS__URL=redis://localhost:6379 \
+            -e APP__AUTH__JWT_SECRET=test-secret-key-min-32-characters-long \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+
+          # Wait for app to start
+          sleep 30
+
+          # Test health endpoint
+          curl -f http://localhost:8080/health || exit 1
+
+          echo "Docker image test passed!"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop tracker-test test-postgres test-redis || true
+          docker rm tracker-test test-postgres test-redis || true
+
+  sign-image:
+    name: Sign Docker Image with Cosign
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download digest
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-digests
+          path: digests
+
+      - name: Get image version
+        id: version
+        run: echo "VERSION=$(cat digests/version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Sign container image
+        run: |
+          cosign sign --yes \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+        continue-on-error: true
+
+  notify:
+    name: Notify Build Status
+    runs-on: ubuntu-latest
+    needs: [build-and-push, test-docker-image]
+    if: always() && github.ref == 'refs/heads/main'
+    steps:
+      - name: Send Discord notification
+        if: ${{ secrets.DISCORD_WEBHOOK != '' }}
+        run: |
+          if [ "${{ needs.build-and-push.result }}" == "success" ] && [ "${{ needs.test-docker-image.result }}" == "success" ]; then
+            COLOR="3066993"
+            STATUS="Success"
+          else
+            COLOR="15158332"
+            STATUS="Failed"
+          fi
+
+          curl -H "Content-Type: application/json" \
+            -d "{\"embeds\": [{\"title\": \"Docker Build ${STATUS}\", \"color\": ${COLOR}, \"description\": \"Build completed for commit ${{ github.sha }}\", \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}]}" \
+            ${{ secrets.DISCORD_WEBHOOK }}
+        continue-on-error: true

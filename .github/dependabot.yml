@@ -1,0 +1,127 @@
+version: 2
+updates:
+  # Rust dependencies in tracker-platform
+  - package-ecosystem: "cargo"
+    directory: "/tracker-platform"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "tracker-platform-team"
+    assignees:
+      - "tracker-platform-team"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "automated"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    # Only auto-merge patch updates for security
+    # Major and minor updates require manual review
+    versioning-strategy: auto
+    # Group updates by dependency type
+    groups:
+      rust-production-dependencies:
+        patterns:
+          - "tokio*"
+          - "axum*"
+          - "sqlx*"
+          - "redis*"
+          - "serde*"
+        update-types:
+          - "patch"
+          - "minor"
+      rust-development-dependencies:
+        patterns:
+          - "mockall"
+          - "fake"
+        update-types:
+          - "patch"
+          - "minor"
+
+  # NPM dependencies in frontend
+  - package-ecosystem: "npm"
+    directory: "/tracker-platform/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "tracker-platform-team"
+    assignees:
+      - "tracker-platform-team"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "automated"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    versioning-strategy: auto
+    # Ignore specific packages if needed
+    ignore:
+      # Example: ignore major version updates for specific packages
+      # - dependency-name: "svelte"
+      #   update-types: ["version-update:semver-major"]
+    groups:
+      svelte-dependencies:
+        patterns:
+          - "@sveltejs/*"
+          - "svelte*"
+        update-types:
+          - "patch"
+          - "minor"
+      dev-dependencies:
+        patterns:
+          - "eslint*"
+          - "prettier*"
+          - "vite*"
+        update-types:
+          - "patch"
+          - "minor"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "tracker-platform-team"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+
+  # Docker
+  - package-ecosystem: "docker"
+    directory: "/tracker-platform"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "tracker-platform-team"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "automated"
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"

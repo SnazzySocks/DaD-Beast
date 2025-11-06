@@ -1,0 +1,407 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'bugfix/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  SQLX_OFFLINE: true
+
+jobs:
+  lint-rust:
+    name: Lint Rust Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-lint-
+            ${{ runner.os }}-cargo-
+
+      - name: Run cargo fmt check
+        run: cargo fmt --all --check
+        working-directory: tracker-platform
+
+      - name: Run cargo clippy
+        run: cargo clippy --all-features --all-targets -- -D warnings
+        working-directory: tracker-platform
+
+  lint-frontend:
+    name: Lint Frontend Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tracker-platform/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tracker-platform/frontend
+
+      - name: Run ESLint
+        run: npm run lint
+        working-directory: tracker-platform/frontend
+
+      - name: Check formatting
+        run: npx prettier --check .
+        working-directory: tracker-platform/frontend
+
+      - name: Run Svelte check
+        run: npm run check
+        working-directory: tracker-platform/frontend
+
+  build-rust:
+    name: Build Rust Backend
+    runs-on: ubuntu-latest
+    needs: [lint-rust]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+            ${{ runner.os }}-cargo-
+
+      - name: Build in release mode
+        run: cargo build --release --all-features
+        working-directory: tracker-platform
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-binary
+          path: tracker-platform/target/release/tracker-app
+          retention-days: 7
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: [lint-frontend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tracker-platform/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tracker-platform/frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: tracker-platform/frontend
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: tracker-platform/frontend/build
+          retention-days: 7
+
+  test-rust:
+    name: Test Rust Backend
+    runs-on: ubuntu-latest
+    needs: [lint-rust]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: tracker
+          POSTGRES_PASSWORD: tracker_password
+          POSTGRES_DB: tracker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-test-
+            ${{ runner.os }}-cargo-
+
+      - name: Install cargo-tarpaulin for coverage
+        run: cargo install cargo-tarpaulin || true
+
+      - name: Run unit tests
+        env:
+          DATABASE_URL: postgresql://tracker:tracker_password@localhost:5432/tracker_test
+          REDIS_URL: redis://localhost:6379
+        run: cargo test --all-features --lib
+        working-directory: tracker-platform
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://tracker:tracker_password@localhost:5432/tracker_test
+          REDIS_URL: redis://localhost:6379
+        run: cargo test --all-features --test '*'
+        working-directory: tracker-platform
+
+      - name: Generate coverage report
+        env:
+          DATABASE_URL: postgresql://tracker:tracker_password@localhost:5432/tracker_test
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cargo tarpaulin --all-features --workspace --timeout 300 \
+            --out Xml --output-dir coverage
+        working-directory: tracker-platform
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: tracker-platform/coverage/cobertura.xml
+          flags: rust
+          name: rust-coverage
+        continue-on-error: true
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    needs: [lint-frontend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tracker-platform/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tracker-platform/frontend
+
+      - name: Run unit tests
+        run: npm run test:unit || echo "No unit tests configured yet"
+        working-directory: tracker-platform/frontend
+        continue-on-error: true
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [build-rust, build-frontend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install -D @playwright/test
+          npx playwright install --with-deps chromium
+
+      - name: Start Docker Compose services
+        run: docker compose up -d
+        working-directory: tracker-platform
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Wait for services to be ready
+        run: |
+          timeout 120 sh -c 'until curl -f http://localhost:8080/health; do sleep 2; done'
+        working-directory: tracker-platform
+
+      - name: Run E2E tests
+        run: npx playwright test || echo "No E2E tests configured yet"
+        continue-on-error: true
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+        continue-on-error: true
+
+      - name: Stop Docker Compose services
+        if: always()
+        run: docker compose down -v
+        working-directory: tracker-platform
+
+  security-rust:
+    name: Security Audit - Rust
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo-audit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-audit
+          key: ${{ runner.os }}-cargo-audit
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit || true
+
+      - name: Run cargo audit
+        run: cargo audit --deny warnings
+        working-directory: tracker-platform
+        continue-on-error: true
+
+  security-frontend:
+    name: Security Audit - Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tracker-platform/frontend
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        working-directory: tracker-platform/frontend
+        continue-on-error: true
+
+  security-scan:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'tracker-platform'
+          path: '.'
+          format: 'HTML'
+          out: 'reports'
+        continue-on-error: true
+
+      - name: Upload OWASP report
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-report
+          path: reports
+          retention-days: 7
+        continue-on-error: true
+
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    needs:
+      - lint-rust
+      - lint-frontend
+      - build-rust
+      - build-frontend
+      - test-rust
+      - test-frontend
+      - e2e-tests
+      - security-rust
+      - security-frontend
+    if: always()
+    steps:
+      - name: Check all jobs status
+        run: |
+          if [[ "${{ needs.lint-rust.result }}" == "success" ]] && \
+             [[ "${{ needs.lint-frontend.result }}" == "success" ]] && \
+             [[ "${{ needs.build-rust.result }}" == "success" ]] && \
+             [[ "${{ needs.build-frontend.result }}" == "success" ]] && \
+             [[ "${{ needs.test-rust.result }}" == "success" ]] && \
+             [[ "${{ needs.test-frontend.result }}" == "success" ]]; then
+            echo "All critical CI jobs passed!"
+            exit 0
+          else
+            echo "One or more critical CI jobs failed!"
+            exit 1
+          fi

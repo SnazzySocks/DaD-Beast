@@ -1,0 +1,71 @@
+[package]
+name = "auth"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true }
+
+# Web framework
+axum = { workspace = true }
+axum-extra = { workspace = true }
+tower = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Redis for sessions
+redis = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Time handling
+chrono = { workspace = true }
+time = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Password hashing
+argon2 = { workspace = true }
+
+# JWT and authentication
+jsonwebtoken = { workspace = true }
+totp-rs = { workspace = true }
+
+# Validation
+validator = { workspace = true }
+
+# Email
+lettre = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# HTTP types
+http = "1.0"
+
+# Base64 for encoding/decoding
+base64 = "0.21"
+
+# Random number generation
+rand = "0.8"
+
+# Hex encoding
+hex = "0.4"
+
+[dev-dependencies]
+# Testing
+mockall = { workspace = true }
+fake = { workspace = true }
+tokio-test = "0.4"
