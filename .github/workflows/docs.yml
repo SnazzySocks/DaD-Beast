@@ -1,0 +1,480 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tracker-platform/**/*.rs'
+      - 'tracker-platform/**/*.md'
+      - 'tracker-platform/frontend/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tracker-platform/**/*.rs'
+      - 'tracker-platform/**/*.md'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-rust-docs:
+    name: Build Rust Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-docs-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build Rust documentation
+        run: |
+          cargo doc --no-deps --all-features --workspace
+        working-directory: tracker-platform
+        env:
+          RUSTDOCFLAGS: "--enable-index-page -Zunstable-options"
+
+      - name: Add redirect index page
+        run: |
+          cat > tracker-platform/target/doc/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=tracker_app/index.html">
+            <title>Tracker Platform Documentation</title>
+          </head>
+          <body>
+            <p>Redirecting to <a href="tracker_app/index.html">documentation</a>...</p>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload Rust docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-docs
+          path: tracker-platform/target/doc
+          retention-days: 7
+
+  build-api-docs:
+    name: Build API Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-openapi-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install dependencies
+        run: |
+          # Install tools for generating OpenAPI specs if needed
+          cargo install cargo-expand || true
+
+      - name: Generate OpenAPI specification
+        run: |
+          # Create a basic OpenAPI spec
+          mkdir -p api-docs
+          cat > api-docs/openapi.yaml << 'EOF'
+          openapi: 3.0.3
+          info:
+            title: Tracker Platform API
+            description: |
+              Unified Tracker Platform REST API
+
+              This API provides access to torrent tracking, user management,
+              media library, and community features.
+            version: 1.0.0
+            contact:
+              name: API Support
+              url: https://github.com/${{ github.repository }}
+          servers:
+            - url: http://localhost:8080
+              description: Local development
+            - url: https://api.example.com
+              description: Production
+          paths:
+            /health:
+              get:
+                summary: Health check
+                description: Check if the service is running
+                responses:
+                  '200':
+                    description: Service is healthy
+                    content:
+                      application/json:
+                        schema:
+                          type: object
+                          properties:
+                            status:
+                              type: string
+                              example: ok
+            /api/v1/torrents:
+              get:
+                summary: List torrents
+                description: Get a paginated list of torrents
+                parameters:
+                  - name: page
+                    in: query
+                    schema:
+                      type: integer
+                      default: 1
+                  - name: limit
+                    in: query
+                    schema:
+                      type: integer
+                      default: 20
+                responses:
+                  '200':
+                    description: List of torrents
+            /api/v1/search:
+              get:
+                summary: Search
+                description: Search for torrents
+                parameters:
+                  - name: q
+                    in: query
+                    required: true
+                    schema:
+                      type: string
+                responses:
+                  '200':
+                    description: Search results
+          EOF
+
+      - name: Generate HTML API docs
+        run: |
+          docker run --rm -v $(pwd)/api-docs:/spec redocly/redoc-cli \
+            bundle /spec/openapi.yaml -o /spec/api-docs.html || \
+            echo "Redoc CLI not available, skipping HTML generation"
+        continue-on-error: true
+
+      - name: Upload API docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-docs
+          path: api-docs
+          retention-days: 7
+
+  build-frontend-docs:
+    name: Build Frontend Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tracker-platform/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tracker-platform/frontend
+
+      - name: Generate component documentation
+        run: |
+          mkdir -p frontend-docs
+
+          # Create basic frontend documentation
+          cat > frontend-docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Frontend Documentation</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 2rem;
+              }
+              h1 { color: #2c3e50; }
+              .section { margin: 2rem 0; }
+              code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 3px; }
+            </style>
+          </head>
+          <body>
+            <h1>Tracker Platform Frontend</h1>
+            <div class="section">
+              <h2>Technology Stack</h2>
+              <ul>
+                <li>SvelteKit - Framework</li>
+                <li>TypeScript - Type safety</li>
+                <li>Tailwind CSS - Styling</li>
+                <li>GraphQL - API communication</li>
+              </ul>
+            </div>
+            <div class="section">
+              <h2>Development</h2>
+              <p>Run <code>npm run dev</code> to start the development server.</p>
+            </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload frontend docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-docs
+          path: frontend-docs
+          retention-days: 7
+
+  generate-readme-badges:
+    name: Generate README Badges
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create badges documentation
+        run: |
+          mkdir -p badges
+          cat > badges/badges.md << 'EOF'
+          # Badges for README
+
+          Add these to your README.md:
+
+          ## Build Status
+          ```markdown
+          ![CI Pipeline](https://github.com/${{ github.repository }}/workflows/CI%20Pipeline/badge.svg)
+          ```
+
+          ## Latest Release
+          ```markdown
+          ![Latest Release](https://img.shields.io/github/v/release/${{ github.repository }})
+          ```
+
+          ## Docker Image
+          ```markdown
+          ![Docker Image](https://img.shields.io/badge/docker-ghcr.io-blue)
+          ```
+
+          ## License
+          ```markdown
+          ![License](https://img.shields.io/github/license/${{ github.repository }})
+          ```
+
+          ## Code Coverage
+          ```markdown
+          ![Coverage](https://img.shields.io/codecov/c/github/${{ github.repository }})
+          ```
+
+          ## Documentation
+          ```markdown
+          ![Documentation](https://img.shields.io/badge/docs-latest-brightgreen)
+          ```
+
+          ## Issues
+          ```markdown
+          ![Issues](https://img.shields.io/github/issues/${{ github.repository }})
+          ```
+
+          ## Pull Requests
+          ```markdown
+          ![Pull Requests](https://img.shields.io/github/issues-pr/${{ github.repository }})
+          ```
+
+          ## Stars
+          ```markdown
+          ![Stars](https://img.shields.io/github/stars/${{ github.repository }})
+          ```
+
+          ## Example README Header:
+
+          ```markdown
+          # Tracker Platform
+
+          ![CI Pipeline](https://github.com/${{ github.repository }}/workflows/CI%20Pipeline/badge.svg)
+          ![Latest Release](https://img.shields.io/github/v/release/${{ github.repository }})
+          ![License](https://img.shields.io/github/license/${{ github.repository }})
+          ![Documentation](https://img.shields.io/badge/docs-latest-brightgreen)
+          ```
+          EOF
+
+      - name: Upload badges artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: badges
+          path: badges
+          retention-days: 7
+
+  deploy-docs:
+    name: Deploy Documentation to GitHub Pages
+    needs: [build-rust-docs, build-api-docs, build-frontend-docs]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all documentation artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create documentation site
+        run: |
+          mkdir -p docs-site
+
+          # Create main index
+          cat > docs-site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Tracker Platform Documentation</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.6;
+                color: #333;
+              }
+              .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 3rem 2rem;
+                text-align: center;
+              }
+              .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+              .header p { font-size: 1.2rem; opacity: 0.9; }
+              .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+              .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 2rem;
+                margin: 2rem 0;
+              }
+              .card {
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 2rem;
+                transition: transform 0.2s, box-shadow 0.2s;
+              }
+              .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+              }
+              .card h2 { color: #667eea; margin-bottom: 1rem; }
+              .card p { color: #666; margin-bottom: 1rem; }
+              .card a {
+                display: inline-block;
+                background: #667eea;
+                color: white;
+                padding: 0.5rem 1.5rem;
+                border-radius: 4px;
+                text-decoration: none;
+                transition: background 0.2s;
+              }
+              .card a:hover { background: #764ba2; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>Tracker Platform Documentation</h1>
+              <p>Complete documentation for the Unified Tracker Platform</p>
+            </div>
+            <div class="container">
+              <div class="grid">
+                <div class="card">
+                  <h2>🦀 Rust API Docs</h2>
+                  <p>Complete Rust API documentation including all crates and modules.</p>
+                  <a href="rust-docs/index.html">View Rust Docs →</a>
+                </div>
+                <div class="card">
+                  <h2>📡 REST API</h2>
+                  <p>OpenAPI specification and REST API reference.</p>
+                  <a href="api-docs/api-docs.html">View API Docs →</a>
+                </div>
+                <div class="card">
+                  <h2>🎨 Frontend</h2>
+                  <p>Frontend component documentation and guides.</p>
+                  <a href="frontend-docs/index.html">View Frontend Docs →</a>
+                </div>
+                <div class="card">
+                  <h2>📚 User Guide</h2>
+                  <p>Getting started guides and tutorials.</p>
+                  <a href="https://github.com/${{ github.repository }}#readme">View README →</a>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+          EOF
+
+          # Copy all documentation
+          cp -r rust-docs docs-site/ || echo "No Rust docs"
+          cp -r api-docs docs-site/ || echo "No API docs"
+          cp -r frontend-docs docs-site/ || echo "No frontend docs"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs-site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  notify:
+    name: Send Notifications
+    needs: [deploy-docs]
+    runs-on: ubuntu-latest
+    if: always() && github.ref == 'refs/heads/main'
+    steps:
+      - name: Send Discord notification
+        if: ${{ secrets.DISCORD_WEBHOOK != '' }}
+        run: |
+          if [ "${{ needs.deploy-docs.result }}" == "success" ]; then
+            COLOR="3066993"
+            STATUS="Updated"
+          else
+            COLOR="15158332"
+            STATUS="Failed"
+          fi
+
+          curl -H "Content-Type: application/json" \
+            -d "{\"embeds\": [{\"title\": \"Documentation ${STATUS}\", \"color\": ${COLOR}, \"description\": \"Documentation has been updated on GitHub Pages\"}]}" \
+            ${{ secrets.DISCORD_WEBHOOK }}
+        continue-on-error: true

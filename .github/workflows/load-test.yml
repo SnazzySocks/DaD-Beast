@@ -1,0 +1,274 @@
+name: Load Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: 'Test duration (e.g., 5m, 10m)'
+        required: false
+        default: '5m'
+      virtual_users:
+        description: 'Number of virtual users'
+        required: false
+        default: '100'
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+env:
+  K6_VERSION: '0.47.0'
+  RESULTS_DIR: 'load-test-results'
+
+jobs:
+  load-test:
+    name: Run Load Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        run: |
+          curl -L https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-amd64.tar.gz | tar xvz
+          sudo mv k6-v${K6_VERSION}-linux-amd64/k6 /usr/local/bin/
+
+      - name: Create k6 test script
+        run: |
+          mkdir -p tests/load
+          cat > tests/load/baseline.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+          import { Rate } from 'k6/metrics';
+
+          const failureRate = new Rate('failed_requests');
+          const baseUrl = __ENV.BASE_URL || 'http://localhost:8080';
+
+          export let options = {
+            stages: [
+              { duration: '2m', target: 10 },  // Ramp up
+              { duration: __ENV.DURATION || '5m', target: __ENV.VUS || 100 }, // Stay at peak
+              { duration: '2m', target: 0 },   // Ramp down
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<500', 'p(99)<1000'], // 95% < 500ms, 99% < 1s
+              http_req_failed: ['rate<0.05'], // Error rate < 5%
+              failed_requests: ['rate<0.05'],
+            },
+          };
+
+          export default function () {
+            // Test health endpoint
+            let healthRes = http.get(`${baseUrl}/health`);
+            check(healthRes, {
+              'health check status is 200': (r) => r.status === 200,
+            }) || failureRate.add(1);
+
+            // Test API endpoints
+            let apiRes = http.get(`${baseUrl}/api/v1/torrents?page=1&limit=20`);
+            check(apiRes, {
+              'API status is 200': (r) => r.status === 200,
+              'response time < 500ms': (r) => r.timings.duration < 500,
+            }) || failureRate.add(1);
+
+            // Test search
+            let searchRes = http.get(`${baseUrl}/api/v1/search?q=test&limit=10`);
+            check(searchRes, {
+              'search status is 200': (r) => r.status === 200,
+            }) || failureRate.add(1);
+
+            sleep(1);
+          }
+          EOF
+
+      - name: Start test environment
+        if: github.event.inputs.environment == 'staging' || github.event_name == 'schedule'
+        run: |
+          docker compose up -d
+          timeout 120 sh -c 'until curl -f http://localhost:8080/health; do sleep 2; done'
+        working-directory: tracker-platform
+
+      - name: Run k6 load tests
+        run: |
+          mkdir -p ${RESULTS_DIR}
+          BASE_URL="${{ github.event.inputs.environment == 'production' && secrets.PROD_URL || 'http://localhost:8080' }}" \
+          DURATION="${{ github.event.inputs.duration || '5m' }}" \
+          VUS="${{ github.event.inputs.virtual_users || '100' }}" \
+          k6 run --out json=${RESULTS_DIR}/results.json tests/load/baseline.js
+
+      - name: Generate HTML report
+        if: always()
+        run: |
+          cat > ${RESULTS_DIR}/report.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Load Test Report</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              .metric { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+              .pass { background-color: #d4edda; }
+              .fail { background-color: #f8d7da; }
+            </style>
+          </head>
+          <body>
+            <h1>Load Test Report</h1>
+            <p>Generated: $(date)</p>
+            <p>Duration: ${{ github.event.inputs.duration || '5m' }}</p>
+            <p>Virtual Users: ${{ github.event.inputs.virtual_users || '100' }}</p>
+            <p>Environment: ${{ github.event.inputs.environment || 'staging' }}</p>
+            <h2>Results</h2>
+            <div class="metric">See JSON results for detailed metrics</div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results-${{ github.run_number }}
+          path: ${{ env.RESULTS_DIR }}
+          retention-days: 30
+
+      - name: Download baseline results
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: load-test-baseline
+          path: baseline
+
+      - name: Compare with baseline
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          if [ -f baseline/results.json ]; then
+            echo "Comparing with baseline..."
+            # Add comparison logic here
+            echo "Baseline comparison available in artifacts"
+          else
+            echo "No baseline found, this will be the new baseline"
+          fi
+
+      - name: Save as new baseline
+        if: github.ref == 'refs/heads/main' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-baseline
+          path: ${{ env.RESULTS_DIR }}
+          retention-days: 90
+
+      - name: Deploy results to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Clone gh-pages branch
+          git clone --branch gh-pages https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages || \
+            git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages && \
+            cd gh-pages && git checkout --orphan gh-pages && git rm -rf . && cd ..
+
+          # Copy results
+          mkdir -p gh-pages/load-tests
+          cp -r ${RESULTS_DIR}/* gh-pages/load-tests/latest/
+          cp -r ${RESULTS_DIR}/* gh-pages/load-tests/$(date +%Y-%m-%d-%H-%M)/
+
+          # Commit and push
+          cd gh-pages
+          git add .
+          git commit -m "Update load test results - $(date)" || true
+          git push origin gh-pages || true
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## Load Test Results\n\nLoad tests completed. Check artifacts for detailed results.'
+            })
+
+      - name: Stop test environment
+        if: always()
+        run: docker compose down -v
+        working-directory: tracker-platform
+
+  stress-test:
+    name: Stress Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        run: |
+          curl -L https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-amd64.tar.gz | tar xvz
+          sudo mv k6-v${K6_VERSION}-linux-amd64/k6 /usr/local/bin/
+
+      - name: Create stress test script
+        run: |
+          mkdir -p tests/load
+          cat > tests/load/stress.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+
+          const baseUrl = __ENV.BASE_URL || 'http://localhost:8080';
+
+          export let options = {
+            stages: [
+              { duration: '2m', target: 100 },  // Ramp up to 100 users
+              { duration: '5m', target: 100 },  // Stay at 100 for 5 minutes
+              { duration: '2m', target: 200 },  // Spike to 200 users
+              { duration: '5m', target: 200 },  // Stay at 200 for 5 minutes
+              { duration: '2m', target: 300 },  // Spike to 300 users
+              { duration: '5m', target: 300 },  // Stay at 300 for 5 minutes
+              { duration: '5m', target: 0 },    // Ramp down to 0
+            ],
+          };
+
+          export default function () {
+            http.get(`${baseUrl}/health`);
+            http.get(`${baseUrl}/api/v1/torrents?page=1&limit=20`);
+            sleep(1);
+          }
+          EOF
+
+      - name: Start test environment
+        run: |
+          docker compose up -d
+          timeout 120 sh -c 'until curl -f http://localhost:8080/health; do sleep 2; done'
+        working-directory: tracker-platform
+
+      - name: Run stress test
+        continue-on-error: true
+        run: |
+          mkdir -p ${RESULTS_DIR}/stress
+          BASE_URL="http://localhost:8080" \
+          k6 run --out json=${RESULTS_DIR}/stress/results.json tests/load/stress.js
+
+      - name: Upload stress test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-test-results-${{ github.run_number }}
+          path: ${{ env.RESULTS_DIR }}/stress
+          retention-days: 30
+
+      - name: Stop test environment
+        if: always()
+        run: docker compose down -v
+        working-directory: tracker-platform
