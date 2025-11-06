@@ -21,11 +21,11 @@
 	}
 
 	const navItems = [
-		{ href: '/', label: 'Home' },
-		{ href: '/torrents', label: 'Torrents' },
-		{ href: '/forums', label: 'Forums' },
-		{ href: '/chat', label: 'Chat' },
-		{ href: '/stats', label: 'Stats' }
+		{ href: '/', label: 'back to the couch' },
+		{ href: '/torrents', label: 'the stuff i pretend to care about' },
+		{ href: '/forums', label: 'complaining with strangers' },
+		{ href: '/chat', label: 'avoiding real conversations' },
+		{ href: '/stats', label: 'pointless numbers' }
 	];
 </script>
 
@@ -63,7 +63,7 @@
 				<a
 					href="/search"
 					class="p-2 text-muted hover:text-primary transition-colors"
-					aria-label="Search"
+					aria-label="looking for something better"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -101,23 +101,23 @@
 						{#if userMenuOpen}
 							<div class="absolute right-0 mt-2 w-48 bg-surface border border-theme rounded-lg shadow-lg py-1 animate-fade-in">
 								<a href="/user/{$auth.user?.id}" class="block px-4 py-2 text-sm text-primary hover:bg-surface-light">
-									Profile
+									the disappointment i've become
 								</a>
 								<a href="/user/settings" class="block px-4 py-2 text-sm text-primary hover:bg-surface-light">
-									Settings
+									adjusting my excuses
 								</a>
 								<a href="/messages" class="block px-4 py-2 text-sm text-primary hover:bg-surface-light">
-									Messages
+									things i'll ignore
 								</a>
 								<a href="/upload" class="block px-4 py-2 text-sm text-primary hover:bg-surface-light">
-									Upload
+									adding to my regrets
 								</a>
 								<hr class="my-1 border-theme" />
 								<button
 									on:click={handleLogout}
 									class="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-surface-light"
 								>
-									Logout
+									going out for a pack of cigs
 								</button>
 							</div>
 						{/if}
@@ -125,8 +125,8 @@
 				{:else}
 					<!-- Auth Buttons -->
 					<div class="hidden md:flex items-center space-x-2">
-						<a href="/login" class="btn btn-secondary text-sm">Login</a>
-						<a href="/register" class="btn btn-primary text-sm">Register</a>
+						<a href="/login" class="btn btn-secondary text-sm">guess i'm back</a>
+						<a href="/register" class="btn btn-primary text-sm">another mistake to regret</a>
 					</div>
 				{/if}
 
@@ -166,8 +166,8 @@
 
 				{#if !$isAuthenticated}
 					<div class="mt-4 space-y-2">
-						<a href="/login" class="block btn btn-secondary text-sm text-center">Login</a>
-						<a href="/register" class="block btn btn-primary text-sm text-center">Register</a>
+						<a href="/login" class="block btn btn-secondary text-sm text-center">guess i'm back</a>
+						<a href="/register" class="block btn btn-primary text-sm text-center">another mistake to regret</a>
 					</div>
 				{/if}
 			</div>

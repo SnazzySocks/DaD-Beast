@@ -3,22 +3,22 @@
 
 	const footerLinks = {
 		about: [
-			{ label: 'About Us', href: '/about' },
-			{ label: 'FAQ', href: '/faq' },
-			{ label: 'Rules', href: '/rules' },
-			{ label: 'Contact', href: '/contact' }
+			{ label: "why this exists (we don't know either)", href: '/about' },
+			{ label: 'questions with no good answers', href: '/faq' },
+			{ label: 'things that bind us', href: '/rules' },
+			{ label: 'bother someone else', href: '/contact' }
 		],
 		community: [
-			{ label: 'Forums', href: '/forums' },
-			{ label: 'Chat', href: '/chat' },
-			{ label: 'Wiki', href: '/wiki' },
-			{ label: 'Blog', href: '/blog' }
+			{ label: 'where i go to argue', href: '/forums' },
+			{ label: 'words i can\'t take back', href: '/chat' },
+			{ label: 'collective procrastination', href: '/wiki' },
+			{ label: 'rambling nobody reads', href: '/blog' }
 		],
 		help: [
-			{ label: 'Getting Started', href: '/help/getting-started' },
-			{ label: 'Upload Guide', href: '/help/upload-guide' },
-			{ label: 'Download Guide', href: '/help/download-guide' },
-			{ label: 'API Docs', href: '/api/docs' }
+			{ label: 'first steps toward regret', href: '/help/getting-started' },
+			{ label: 'how to contribute to the mess', href: '/help/upload-guide' },
+			{ label: 'taking without giving back', href: '/help/download-guide' },
+			{ label: 'technical excuses', href: '/api/docs' }
 		]
 	};
 </script>
@@ -90,13 +90,13 @@
 
 			<div class="flex space-x-6 mt-4 sm:mt-0">
 				<a href="/privacy" class="text-sm text-muted hover:text-primary transition-colors">
-					Privacy Policy
+					how we'll fail to protect you
 				</a>
 				<a href="/terms" class="text-sm text-muted hover:text-primary transition-colors">
-					Terms of Service
+					legal reasons to be stuck here
 				</a>
 				<a href="/dmca" class="text-sm text-muted hover:text-primary transition-colors">
-					DMCA
+					lawyers ruining everything
 				</a>
 			</div>
 		</div>

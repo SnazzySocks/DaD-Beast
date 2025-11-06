@@ -34,12 +34,12 @@
 	];
 
 	const sortOptions = [
-		{ value: 'newest', label: 'Newest' },
-		{ value: 'oldest', label: 'Oldest' },
-		{ value: 'seeders', label: 'Most Seeders' },
-		{ value: 'leechers', label: 'Most Leechers' },
-		{ value: 'size', label: 'Largest' },
-		{ value: 'name', label: 'Name A-Z' }
+		{ value: 'newest', label: 'fresh disappointments' },
+		{ value: 'oldest', label: 'ancient regrets' },
+		{ value: 'seeders', label: 'popular mistakes' },
+		{ value: 'leechers', label: 'shared misery' },
+		{ value: 'size', label: 'biggest wastes of space' },
+		{ value: 'name', label: 'alphabetical failures' }
 	];
 
 	function handleSearch(e: Event) {
@@ -74,8 +74,8 @@
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	<div class="flex items-center justify-between mb-8">
-		<h1 class="text-3xl font-bold text-primary">Browse Torrents</h1>
-		<a href="/upload" class="btn btn-primary">Upload</a>
+		<h1 class="text-3xl font-bold text-primary">wasting time like always</h1>
+		<a href="/upload" class="btn btn-primary">adding to my regrets</a>
 	</div>
 
 	<!-- Filters -->
@@ -87,9 +87,9 @@
 					type="text"
 					bind:value={search}
 					class="input flex-1"
-					placeholder="Search torrents..."
+					placeholder="looking for meaning..."
 				/>
-				<button type="submit" class="btn btn-primary px-6">Search</button>
+				<button type="submit" class="btn btn-primary px-6">looking for meaning</button>
 			</div>
 		</form>
 
@@ -156,7 +156,7 @@
 					disabled={currentPage === 1}
 					class="btn btn-secondary"
 				>
-					Previous
+					back to worse
 				</button>
 
 				{#each Array(Math.min(5, torrents.pages)) as _, i}
@@ -166,7 +166,7 @@
 							on:click={() => changePage(pageNum)}
 							class="btn {pageNum === currentPage ? 'btn-primary' : 'btn-secondary'}"
 						>
-							{pageNum}
+							level {pageNum}
 						</button>
 					{/if}
 				{/each}
@@ -176,7 +176,7 @@
 					disabled={currentPage === torrents.pages}
 					class="btn btn-secondary"
 				>
-					Next
+					forward into nothing
 				</button>
 			</div>
 		{/if}

@@ -25,10 +25,10 @@
 	}
 
 	const searchTypes = [
-		{ value: 'all', label: 'All' },
-		{ value: 'torrents', label: 'Torrents' },
-		{ value: 'users', label: 'Users' },
-		{ value: 'posts', label: 'Forum Posts' }
+		{ value: 'all', label: "everything's terrible anyway" },
+		{ value: 'torrents', label: 'digital mistakes' },
+		{ value: 'users', label: 'other lost souls' },
+		{ value: 'posts', label: 'collective regrets' }
 	];
 </script>
 
@@ -37,7 +37,7 @@
 </svelte:head>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-	<h1 class="text-3xl font-bold text-primary mb-8">Search</h1>
+	<h1 class="text-3xl font-bold text-primary mb-8">looking for something better</h1>
 
 	<!-- Search Form -->
 	<div class="card p-6 mb-8">
@@ -47,11 +47,11 @@
 					type="text"
 					bind:value={searchQuery}
 					class="input flex-1"
-					placeholder="Search for torrents, users, or posts..."
+					placeholder="looking for meaning..."
 					autofocus
 				/>
 				<button type="submit" class="btn btn-primary px-8">
-					Search
+					looking for meaning
 				</button>
 			</div>
 

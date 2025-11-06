@@ -57,7 +57,7 @@
 
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	<div class="card p-8">
-		<h1 class="text-3xl font-bold text-primary mb-8">Upload Torrent</h1>
+		<h1 class="text-3xl font-bold text-primary mb-8">contributing to the void</h1>
 
 		<form on:submit|preventDefault={handleSubmit} class="space-y-6">
 			<!-- Torrent File -->
@@ -148,10 +148,10 @@
 					class="btn btn-primary flex-1"
 					disabled={uploading}
 				>
-					{uploading ? 'Uploading...' : 'Upload Torrent'}
+					{uploading ? 'sealing my fate...' : 'contributing to the void'}
 				</button>
 				<a href="/torrents" class="btn btn-secondary">
-					Cancel
+					giving up (as usual)
 				</a>
 			</div>
 		</form>

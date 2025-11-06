@@ -46,7 +46,7 @@
 					on:click={refreshJoke}
 					class="refresh-button"
 					disabled={isRefreshing}
-					aria-label="Get new joke"
+					aria-label="need a different distraction"
 				>
 					<svg
 						class:spinning={isRefreshing}
@@ -111,7 +111,7 @@
 							on:click={refreshJoke}
 							class="compact-refresh"
 							disabled={isRefreshing}
-							aria-label="Get new joke"
+							aria-label="need a different distraction"
 						>
 							<svg
 								class:spinning={isRefreshing}
