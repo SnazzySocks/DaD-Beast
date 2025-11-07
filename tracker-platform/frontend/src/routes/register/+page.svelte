@@ -4,6 +4,7 @@
 	import { notifications } from '$lib/stores/notifications';
 	import { mutation } from '@urql/svelte';
 	import { REGISTER_MUTATION } from '$lib/graphql/mutations';
+	import DadJoke from '$lib/components/common/DadJoke.svelte';
 
 	let username = '';
 	let email = '';
@@ -67,6 +68,9 @@
 
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
 	<div class="w-full max-w-md">
+		<!-- Dad Joke for UX Enhancement -->
+		<DadJoke variant="default" />
+
 		<div class="card p-8">
 			<!-- Logo -->
 			<div class="flex justify-center mb-8">
@@ -75,7 +79,7 @@
 				</div>
 			</div>
 
-			<h1 class="text-2xl font-bold text-center text-primary mb-8">Create Account</h1>
+			<h1 class="text-2xl font-bold text-center text-primary mb-8">another commitment to abandon</h1>
 
 			<form on:submit|preventDefault={handleSubmit} class="space-y-6">
 				<!-- Username -->
@@ -171,9 +175,9 @@
 					/>
 					<label for="terms" class="ml-2 text-sm text-muted">
 						I agree to the
-						<a href="/terms" class="text-blue-500 hover:text-blue-600">Terms of Service</a>
+						<a href="/terms" class="text-blue-500 hover:text-blue-600">legal reasons to be stuck here</a>
 						and
-						<a href="/privacy" class="text-blue-500 hover:text-blue-600">Privacy Policy</a>
+						<a href="/privacy" class="text-blue-500 hover:text-blue-600">how we'll fail to protect you</a>
 					</label>
 				</div>
 
@@ -183,7 +187,7 @@
 					class="w-full btn btn-primary"
 					disabled={loading}
 				>
-					{loading ? 'Creating account...' : 'Create Account'}
+					{loading ? 'sealing my fate...' : 'another commitment to abandon'}
 				</button>
 			</form>
 
@@ -191,7 +195,7 @@
 			<p class="mt-6 text-center text-sm text-muted">
 				Already have an account?
 				<a href="/login" class="text-blue-500 hover:text-blue-600 font-medium">
-					Sign in
+					fine, i'll stay
 				</a>
 			</p>
 		</div>

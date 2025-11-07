@@ -368,3 +368,13 @@ export const SEARCH_QUERY = gql`
 		}
 	}
 `;
+
+// Dad Joke Query - For UX enhancement on login and dashboard
+export const DAD_JOKE_QUERY = gql`
+	query DadJoke {
+		dadJoke {
+			id
+			joke
+		}
+	}
+`;

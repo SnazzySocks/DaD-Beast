@@ -337,6 +337,15 @@ pub struct PlatformStatistics {
     pub total_peers: i64,
 }
 
+/// Dad joke object for UX enhancement
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize)]
+pub struct DadJoke {
+    /// Unique identifier for the joke
+    pub id: String,
+    /// The joke text
+    pub joke: String,
+}
+
 // ============================================================================
 // Pagination Types
 // ============================================================================

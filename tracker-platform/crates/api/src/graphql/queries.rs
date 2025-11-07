@@ -3,6 +3,7 @@
 //! Query resolvers for fetching data from the database.
 
 use async_graphql::Result;
+use redis::AsyncCommands;
 use tracing::instrument;
 
 use super::{types::*, GraphQLContext};
@@ -363,15 +364,147 @@ pub async fn get_platform_statistics(ctx: &GraphQLContext) -> Result<PlatformSta
     })
 }
 
+/// Fallback dad jokes for when the API is unavailable
+const FALLBACK_JOKES: &[(&str, &str)] = &[
+    ("fallback-1", "Why don't scientists trust atoms? Because they make up everything!"),
+    ("fallback-2", "I only know 25 letters of the alphabet. I don't know y."),
+    ("fallback-3", "What do you call a fake noodle? An impasta!"),
+    ("fallback-4", "Why did the scarecrow win an award? He was outstanding in his field!"),
+    ("fallback-5", "Why don't eggs tell jokes? They'd crack each other up!"),
+    ("fallback-6", "What do you call a bear with no teeth? A gummy bear!"),
+    ("fallback-7", "Why couldn't the bicycle stand up by itself? It was two tired!"),
+    ("fallback-8", "What did the ocean say to the beach? Nothing, it just waved!"),
+    ("fallback-9", "How do you organize a space party? You planet!"),
+    ("fallback-10", "Why did the math book look so sad? Because it had too many problems!"),
+];
+
+/// Get a random dad joke with caching and fallback
+#[instrument(skip(ctx))]
+pub async fn get_dad_joke(ctx: &GraphQLContext) -> Result<DadJoke> {
+    const CACHE_KEY: &str = "dad_jokes:cache";
+    const CACHE_DURATION: i64 = 300;
+
+    let mut redis_conn = match ctx.redis_client.get_multiplexed_async_connection().await {
+        Ok(conn) => Some(conn),
+        Err(e) => {
+            tracing::warn!("Failed to connect to Redis for dad joke cache: {}", e);
+            None
+        }
+    };
+
+    if let Some(ref mut conn) = redis_conn {
+        if let Ok(cached_jokes) = conn.lrange::<&str, Vec<String>>(CACHE_KEY, 0, -1).await {
+            if !cached_jokes.is_empty() {
+                use rand::seq::SliceRandom;
+                use rand::thread_rng;
+
+                if let Some(joke_json) = cached_jokes.choose(&mut thread_rng()) {
+                    if let Ok(joke) = serde_json::from_str::<DadJoke>(joke_json) {
+                        tracing::debug!("Returning cached dad joke: {}", joke.id);
+                        return Ok(joke);
+                    }
+                }
+            }
+        }
+    }
+
+    match fetch_joke_from_api().await {
+        Ok(joke) => {
+            if let Some(ref mut conn) = redis_conn {
+                let joke_json = serde_json::to_string(&joke).unwrap_or_default();
+                let _: Result<(), redis::RedisError> = conn.rpush(CACHE_KEY, &joke_json).await;
+                let _: Result<(), redis::RedisError> = conn.expire(CACHE_KEY, CACHE_DURATION).await;
+            }
+            Ok(joke)
+        }
+        Err(e) => {
+            tracing::warn!("Failed to fetch joke from API, using fallback: {}", e);
+            use rand::seq::SliceRandom;
+            use rand::thread_rng;
+
+            let (id, joke_text) = FALLBACK_JOKES
+                .choose(&mut thread_rng())
+                .unwrap_or(&FALLBACK_JOKES[0]);
+
+            Ok(DadJoke {
+                id: id.to_string(),
+                joke: joke_text.to_string(),
+            })
+        }
+    }
+}
+
+/// Fetch a joke from the icanhazdadjoke API
+async fn fetch_joke_from_api() -> Result<DadJoke, Box<dyn std::error::Error + Send + Sync>> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()?;
+
+    #[derive(serde::Deserialize)]
+    struct ApiResponse {
+        id: String,
+        joke: String,
+    }
+
+    let response = client
+        .get("https://icanhazdadjoke.com/")
+        .header("Accept", "application/json")
+        .header("User-Agent", "Unified Tracker Platform (https://github.com/yourorg/tracker)")
+        .send()
+        .await?;
+
+    if !response.status().is_success() {
+        return Err(format!("API returned status: {}", response.status()).into());
+    }
+
+    let api_response: ApiResponse = response.json().await?;
+
+    Ok(DadJoke {
+        id: api_response.id,
+        joke: api_response.joke,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // Tests would require database setup
-    // Example structure:
     #[test]
-    fn test_queries_compile() {
-        // Just ensure code compiles
-        assert!(true);
+    fn test_fallback_jokes_not_empty() {
+        assert!(!FALLBACK_JOKES.is_empty());
+        assert_eq!(FALLBACK_JOKES.len(), 10);
+    }
+
+    #[test]
+    fn test_fallback_jokes_structure() {
+        for (id, joke) in FALLBACK_JOKES {
+            assert!(!id.is_empty(), "Joke ID should not be empty");
+            assert!(!joke.is_empty(), "Joke text should not be empty");
+            assert!(id.starts_with("fallback-"), "Joke ID should start with 'fallback-'");
+        }
+    }
+
+    #[test]
+    fn test_dad_joke_type() {
+        let joke = DadJoke {
+            id: "test-123".to_string(),
+            joke: "Why don't scientists trust atoms? Because they make up everything!".to_string(),
+        };
+
+        assert_eq!(joke.id, "test-123");
+        assert!(!joke.joke.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_fetch_joke_from_api_structure() {
+        match fetch_joke_from_api().await {
+            Ok(joke) => {
+                assert!(!joke.id.is_empty(), "API joke ID should not be empty");
+                assert!(!joke.joke.is_empty(), "API joke text should not be empty");
+            }
+            Err(_) => {
+                println!("API fetch failed (expected in CI/test environments without internet)");
+            }
+        }
     }
 }

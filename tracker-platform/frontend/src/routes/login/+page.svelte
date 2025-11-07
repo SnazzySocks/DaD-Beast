@@ -4,6 +4,7 @@
 	import { notifications } from '$lib/stores/notifications';
 	import { mutation } from '@urql/svelte';
 	import { LOGIN_MUTATION } from '$lib/graphql/mutations';
+	import DadJoke from '$lib/components/common/DadJoke.svelte';
 
 	let email = '';
 	let password = '';
@@ -54,6 +55,9 @@
 
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
 	<div class="w-full max-w-md">
+		<!-- Dad Joke for UX Enhancement -->
+		<DadJoke variant="default" />
+
 		<div class="card p-8">
 			<!-- Logo -->
 			<div class="flex justify-center mb-8">
@@ -62,7 +66,7 @@
 				</div>
 			</div>
 
-			<h1 class="text-2xl font-bold text-center text-primary mb-8">Welcome Back</h1>
+			<h1 class="text-2xl font-bold text-center text-primary mb-8">guess i'm back</h1>
 
 			<form on:submit|preventDefault={handleSubmit} class="space-y-6">
 				<!-- Email -->
@@ -120,11 +124,11 @@
 				<div class="flex items-center justify-between">
 					<label class="flex items-center">
 						<input type="checkbox" class="rounded border-theme text-blue-500 focus:ring-blue-500" />
-						<span class="ml-2 text-sm text-muted">Remember me</span>
+						<span class="ml-2 text-sm text-muted">unfortunately, yes</span>
 					</label>
 
 					<a href="/forgot-password" class="text-sm text-blue-500 hover:text-blue-600">
-						Forgot password?
+						forgot why i'm here too
 					</a>
 				</div>
 
@@ -134,7 +138,7 @@
 					class="w-full btn btn-primary"
 					disabled={loading}
 				>
-					{loading ? 'Signing in...' : 'Sign In'}
+					{loading ? 'crawling back...' : 'fine, i\'ll stay'}
 				</button>
 			</form>
 
@@ -142,7 +146,7 @@
 			<p class="mt-6 text-center text-sm text-muted">
 				Don't have an account?
 				<a href="/register" class="text-blue-500 hover:text-blue-600 font-medium">
-					Sign up
+					why am i doing this
 				</a>
 			</p>
 		</div>

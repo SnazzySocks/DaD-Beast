@@ -13,32 +13,32 @@ export interface ThemeConfig {
 export const themes: Record<Theme, ThemeConfig> = {
 	dark: {
 		name: 'dark',
-		label: 'Dark',
-		description: 'Modern dark with blue/purple accents',
+		label: 'like my mood',
+		description: 'emotional darkness',
 		class: 'theme-dark'
 	},
 	grey: {
 		name: 'grey',
-		label: 'Grey',
-		description: 'Professional neutral grey tones',
+		label: 'colorless existence',
+		description: 'dull reality',
 		class: 'theme-grey'
 	},
 	light: {
 		name: 'light',
-		label: 'Light',
-		description: 'Clean white with subtle colors',
+		label: 'too bright for my soul',
+		description: "can't handle optimism",
 		class: 'theme-light'
 	},
 	aero: {
 		name: 'aero',
-		label: 'Frutiger Aero',
-		description: 'Glossy Windows Vista/7 aesthetic',
+		label: 'trying to feel something',
+		description: 'desperate for sensation',
 		class: 'theme-aero'
 	},
 	coffee: {
 		name: 'coffee',
-		label: 'Global Coffeehouse',
-		description: 'Warm, cozy coffee shop vibes',
+		label: 'the only thing keeping me going',
+		description: 'caffeine dependency',
 		class: 'theme-coffee'
 	}
 };

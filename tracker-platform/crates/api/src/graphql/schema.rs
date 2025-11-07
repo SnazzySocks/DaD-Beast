@@ -140,6 +140,13 @@ impl QueryRoot {
         let gql_ctx = ctx.data::<GraphQLContext>()?;
         queries::get_platform_statistics(gql_ctx).await
     }
+
+    /// Get a random dad joke for UX enhancement
+    #[instrument(skip(ctx))]
+    async fn dad_joke(&self, ctx: &Context<'_>) -> Result<types::DadJoke> {
+        let gql_ctx = ctx.data::<GraphQLContext>()?;
+        queries::get_dad_joke(gql_ctx).await
+    }
 }
 
 /// Root mutation type
