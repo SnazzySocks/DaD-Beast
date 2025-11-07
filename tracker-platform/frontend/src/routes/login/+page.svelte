@@ -2,9 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth';
 	import { notifications } from '$lib/stores/notifications';
+	import { humorMode } from '$lib/stores/humor';
 	import { mutation } from '@urql/svelte';
 	import { LOGIN_MUTATION } from '$lib/graphql/mutations';
 	import DadJoke from '$lib/components/common/DadJoke.svelte';
+	import HumorToggle from '$lib/components/common/HumorToggle.svelte';
 
 	let email = '';
 	let password = '';
@@ -55,6 +57,9 @@
 
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
 	<div class="w-full max-w-md">
+		<!-- Humor Mode Toggle -->
+		<HumorToggle variant="default" />
+
 		<!-- Dad Joke for UX Enhancement -->
 		<DadJoke variant="default" />
 
@@ -66,7 +71,9 @@
 				</div>
 			</div>
 
-			<h1 class="text-2xl font-bold text-center text-primary mb-8">guess i'm back</h1>
+			<h1 class="text-2xl font-bold text-center text-primary mb-8">
+				{$humorMode === 'dad' ? 'guess i\'m back' : 'Welcome Back'}
+			</h1>
 
 			<form on:submit|preventDefault={handleSubmit} class="space-y-6">
 				<!-- Email -->
@@ -124,11 +131,13 @@
 				<div class="flex items-center justify-between">
 					<label class="flex items-center">
 						<input type="checkbox" class="rounded border-theme text-blue-500 focus:ring-blue-500" />
-						<span class="ml-2 text-sm text-muted">unfortunately, yes</span>
+						<span class="ml-2 text-sm text-muted">
+							{$humorMode === 'dad' ? 'unfortunately, yes' : 'Remember me'}
+						</span>
 					</label>
 
 					<a href="/forgot-password" class="text-sm text-blue-500 hover:text-blue-600">
-						forgot why i'm here too
+						{$humorMode === 'dad' ? 'forgot why i\'m here too' : 'Forgot password?'}
 					</a>
 				</div>
 
@@ -138,7 +147,11 @@
 					class="w-full btn btn-primary"
 					disabled={loading}
 				>
-					{loading ? 'crawling back...' : 'fine, i\'ll stay'}
+					{#if loading}
+						{$humorMode === 'dad' ? 'crawling back...' : 'Logging in...'}
+					{:else}
+						{$humorMode === 'dad' ? 'fine, i\'ll stay' : 'Login'}
+					{/if}
 				</button>
 			</form>
 
@@ -146,7 +159,7 @@
 			<p class="mt-6 text-center text-sm text-muted">
 				Don't have an account?
 				<a href="/register" class="text-blue-500 hover:text-blue-600 font-medium">
-					why am i doing this
+					{$humorMode === 'dad' ? 'why am i doing this' : 'Register now'}
 				</a>
 			</p>
 		</div>
