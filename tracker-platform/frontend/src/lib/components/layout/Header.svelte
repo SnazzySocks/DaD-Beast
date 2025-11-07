@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { auth, isAuthenticated } from '$lib/stores/auth';
+	import { humorMode } from '$lib/stores/humor';
 	import { goto } from '$app/navigation';
 	import ThemeSwitcher from './ThemeSwitcher.svelte';
+	import HumorToggle from '$lib/components/common/HumorToggle.svelte';
 
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;
@@ -20,12 +22,28 @@
 		goto('/login');
 	}
 
-	const navItems = [
-		{ href: '/', label: 'back to the couch' },
-		{ href: '/torrents', label: 'the stuff i pretend to care about' },
-		{ href: '/forums', label: 'complaining with strangers' },
-		{ href: '/chat', label: 'avoiding real conversations' },
-		{ href: '/stats', label: 'pointless numbers' }
+	// Navigation items with both normal and dad humor variants
+	$: navItems = [
+		{
+			href: '/',
+			label: $humorMode === 'dad' ? 'back to the couch' : 'Home'
+		},
+		{
+			href: '/torrents',
+			label: $humorMode === 'dad' ? 'the stuff i pretend to care about' : 'Torrents'
+		},
+		{
+			href: '/forums',
+			label: $humorMode === 'dad' ? 'complaining with strangers' : 'Forums'
+		},
+		{
+			href: '/chat',
+			label: $humorMode === 'dad' ? 'avoiding real conversations' : 'Chat'
+		},
+		{
+			href: '/stats',
+			label: $humorMode === 'dad' ? 'pointless numbers' : 'Statistics'
+		}
 	];
 </script>
 
@@ -63,7 +81,7 @@
 				<a
 					href="/search"
 					class="p-2 text-muted hover:text-primary transition-colors"
-					aria-label="looking for something better"
+					aria-label={$humorMode === 'dad' ? 'looking for something better' : 'Search'}
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -74,6 +92,9 @@
 						/>
 					</svg>
 				</a>
+
+				<!-- Humor Toggle -->
+				<HumorToggle variant="compact" showLabel={false} />
 
 				<!-- Theme Switcher -->
 				<ThemeSwitcher />
@@ -101,23 +122,23 @@
 						{#if userMenuOpen}
 							<div class="absolute right-0 mt-2 w-48 bg-surface border border-theme rounded-lg shadow-lg py-1 animate-fade-in">
 								<a href="/user/{$auth.user?.id}" class="block px-4 py-2 text-sm text-primary hover:bg-surface-light">
-									the disappointment i've become
+									{$humorMode === 'dad' ? 'the disappointment i\'ve become' : 'My Profile'}
 								</a>
 								<a href="/user/settings" class="block px-4 py-2 text-sm text-primary hover:bg-surface-light">
-									adjusting my excuses
+									{$humorMode === 'dad' ? 'adjusting my excuses' : 'Settings'}
 								</a>
 								<a href="/messages" class="block px-4 py-2 text-sm text-primary hover:bg-surface-light">
-									things i'll ignore
+									{$humorMode === 'dad' ? 'things i\'ll ignore' : 'Messages'}
 								</a>
 								<a href="/upload" class="block px-4 py-2 text-sm text-primary hover:bg-surface-light">
-									adding to my regrets
+									{$humorMode === 'dad' ? 'adding to my regrets' : 'Upload Torrent'}
 								</a>
 								<hr class="my-1 border-theme" />
 								<button
 									on:click={handleLogout}
 									class="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-surface-light"
 								>
-									going out for a pack of cigs
+									{$humorMode === 'dad' ? 'going out for a pack of cigs' : 'Logout'}
 								</button>
 							</div>
 						{/if}
@@ -125,8 +146,12 @@
 				{:else}
 					<!-- Auth Buttons -->
 					<div class="hidden md:flex items-center space-x-2">
-						<a href="/login" class="btn btn-secondary text-sm">guess i'm back</a>
-						<a href="/register" class="btn btn-primary text-sm">another mistake to regret</a>
+						<a href="/login" class="btn btn-secondary text-sm">
+							{$humorMode === 'dad' ? 'guess i\'m back' : 'Login'}
+						</a>
+						<a href="/register" class="btn btn-primary text-sm">
+							{$humorMode === 'dad' ? 'another mistake to regret' : 'Register'}
+						</a>
 					</div>
 				{/if}
 
@@ -166,8 +191,12 @@
 
 				{#if !$isAuthenticated}
 					<div class="mt-4 space-y-2">
-						<a href="/login" class="block btn btn-secondary text-sm text-center">guess i'm back</a>
-						<a href="/register" class="block btn btn-primary text-sm text-center">another mistake to regret</a>
+						<a href="/login" class="block btn btn-secondary text-sm text-center">
+							{$humorMode === 'dad' ? 'guess i\'m back' : 'Login'}
+						</a>
+						<a href="/register" class="block btn btn-primary text-sm text-center">
+							{$humorMode === 'dad' ? 'another mistake to regret' : 'Register'}
+						</a>
 					</div>
 				{/if}
 			</div>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { query } from '@urql/svelte';
 	import { TORRENTS_QUERY, STATS_QUERY } from '$lib/graphql/queries';
+	import { humorMode } from '$lib/stores/humor';
 	import TorrentCard from '$lib/components/torrent/TorrentCard.svelte';
 	import Loader from '$lib/components/common/Loader.svelte';
 	import DadJoke from '$lib/components/common/DadJoke.svelte';
@@ -22,13 +23,21 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	<!-- Hero Section -->
 	<div class="card p-8 mb-8 text-center">
-		<h1 class="text-4xl font-bold text-primary mb-4">back to the couch</h1>
+		<h1 class="text-4xl font-bold text-primary mb-4">
+			{$humorMode === 'dad' ? 'back to the couch' : 'Welcome to the Tracker'}
+		</h1>
 		<p class="text-lg text-muted mb-6">
-			where i waste time pretending things matter
+			{$humorMode === 'dad'
+				? 'where i waste time pretending things matter'
+				: 'Your premier destination for high-quality content'}
 		</p>
 		<div class="flex flex-col sm:flex-row justify-center gap-4">
-			<a href="/torrents" class="btn btn-primary">wasting time like always</a>
-			<a href="/upload" class="btn btn-secondary">contributing to the void</a>
+			<a href="/torrents" class="btn btn-primary">
+				{$humorMode === 'dad' ? 'wasting time like always' : 'Browse Torrents'}
+			</a>
+			<a href="/upload" class="btn btn-secondary">
+				{$humorMode === 'dad' ? 'contributing to the void' : 'Upload Content'}
+			</a>
 		</div>
 	</div>
 
@@ -72,9 +81,11 @@
 	<!-- Featured Torrents -->
 	<div class="mb-8">
 		<div class="flex items-center justify-between mb-6">
-			<h2 class="text-2xl font-bold text-primary">fresh disappointments</h2>
+			<h2 class="text-2xl font-bold text-primary">
+				{$humorMode === 'dad' ? 'fresh disappointments' : 'Recent Uploads'}
+			</h2>
 			<a href="/torrents" class="text-sm text-blue-500 hover:text-blue-600">
-				see all my failures →
+				{$humorMode === 'dad' ? 'see all my failures →' : 'View all torrents →'}
 			</a>
 		</div>
 
@@ -108,7 +119,9 @@
 				</svg>
 			</div>
 			<h3 class="text-lg font-semibold text-primary mb-2">Lightning Fast</h3>
-			<p class="text-sm text-muted">at least something works around here</p>
+			<p class="text-sm text-muted">
+				{$humorMode === 'dad' ? 'at least something works around here' : 'Built with Rust for maximum performance'}
+			</p>
 		</div>
 
 		<div class="card p-6 text-center">
@@ -118,7 +131,9 @@
 				</svg>
 			</div>
 			<h3 class="text-lg font-semibold text-primary mb-2">Secure</h3>
-			<p class="text-sm text-muted">locks on my cage</p>
+			<p class="text-sm text-muted">
+				{$humorMode === 'dad' ? 'locks on my cage' : 'Enterprise-grade security with 2FA and encryption'}
+			</p>
 		</div>
 
 		<div class="card p-6 text-center">
@@ -128,7 +143,9 @@
 				</svg>
 			</div>
 			<h3 class="text-lg font-semibold text-primary mb-2">Community</h3>
-			<p class="text-sm text-muted">other lost souls</p>
+			<p class="text-sm text-muted">
+				{$humorMode === 'dad' ? 'other lost souls' : 'Join a vibrant community of content enthusiasts'}
+			</p>
 		</div>
 	</div>
 </div>
