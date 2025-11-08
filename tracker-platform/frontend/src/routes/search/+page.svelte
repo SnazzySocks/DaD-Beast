@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { query } from '@urql/svelte';
 	import { SEARCH_QUERY } from '$lib/graphql/queries';
+	import { humorMode } from '$lib/stores/humor';
 	import TorrentCard from '$lib/components/torrent/TorrentCard.svelte';
 	import Loader from '$lib/components/common/Loader.svelte';
 
@@ -24,11 +25,24 @@
 		}
 	}
 
-	const searchTypes = [
-		{ value: 'all', label: "everything's terrible anyway" },
-		{ value: 'torrents', label: 'digital mistakes' },
-		{ value: 'users', label: 'other lost souls' },
-		{ value: 'posts', label: 'collective regrets' }
+	// Search types with both normal and dad humor variants
+	$: searchTypes = [
+		{
+			value: 'all',
+			label: $humorMode === 'dad' ? "everything's terrible anyway" : 'All'
+		},
+		{
+			value: 'torrents',
+			label: $humorMode === 'dad' ? 'digital mistakes' : 'Torrents'
+		},
+		{
+			value: 'users',
+			label: $humorMode === 'dad' ? 'other lost souls' : 'Users'
+		},
+		{
+			value: 'posts',
+			label: $humorMode === 'dad' ? 'collective regrets' : 'Forum Posts'
+		}
 	];
 </script>
 
@@ -37,7 +51,9 @@
 </svelte:head>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-	<h1 class="text-3xl font-bold text-primary mb-8">looking for something better</h1>
+	<h1 class="text-3xl font-bold text-primary mb-8">
+		{$humorMode === 'dad' ? 'looking for something better' : 'Search'}
+	</h1>
 
 	<!-- Search Form -->
 	<div class="card p-6 mb-8">
@@ -47,11 +63,11 @@
 					type="text"
 					bind:value={searchQuery}
 					class="input flex-1"
-					placeholder="looking for meaning..."
+					placeholder={$humorMode === 'dad' ? 'looking for meaning...' : 'Search torrents, users, posts...'}
 					autofocus
 				/>
 				<button type="submit" class="btn btn-primary px-8">
-					looking for meaning
+					{$humorMode === 'dad' ? 'looking for meaning' : 'Search'}
 				</button>
 			</div>
 

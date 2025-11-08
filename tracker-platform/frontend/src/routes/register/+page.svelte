@@ -4,6 +4,8 @@
 	import { notifications } from '$lib/stores/notifications';
 	import { mutation } from '@urql/svelte';
 	import { REGISTER_MUTATION } from '$lib/graphql/mutations';
+	import { humorMode } from '$lib/stores/humor';
+	import HumorToggle from '$lib/components/common/HumorToggle.svelte';
 	import DadJoke from '$lib/components/common/DadJoke.svelte';
 
 	let username = '';
@@ -68,6 +70,9 @@
 
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
 	<div class="w-full max-w-md">
+		<!-- Humor Toggle -->
+		<HumorToggle variant="default" />
+
 		<!-- Dad Joke for UX Enhancement -->
 		<DadJoke variant="default" />
 
@@ -79,7 +84,9 @@
 				</div>
 			</div>
 
-			<h1 class="text-2xl font-bold text-center text-primary mb-8">another commitment to abandon</h1>
+			<h1 class="text-2xl font-bold text-center text-primary mb-8">
+				{$humorMode === 'dad' ? 'another commitment to abandon' : 'Create Account'}
+			</h1>
 
 			<form on:submit|preventDefault={handleSubmit} class="space-y-6">
 				<!-- Username -->
@@ -175,9 +182,13 @@
 					/>
 					<label for="terms" class="ml-2 text-sm text-muted">
 						I agree to the
-						<a href="/terms" class="text-blue-500 hover:text-blue-600">legal reasons to be stuck here</a>
+						<a href="/terms" class="text-blue-500 hover:text-blue-600">
+							{$humorMode === 'dad' ? 'legal reasons to be stuck here' : 'Terms of Service'}
+						</a>
 						and
-						<a href="/privacy" class="text-blue-500 hover:text-blue-600">how we'll fail to protect you</a>
+						<a href="/privacy" class="text-blue-500 hover:text-blue-600">
+							{$humorMode === 'dad' ? 'how we\'ll fail to protect you' : 'Privacy Policy'}
+						</a>
 					</label>
 				</div>
 
@@ -187,7 +198,11 @@
 					class="w-full btn btn-primary"
 					disabled={loading}
 				>
-					{loading ? 'sealing my fate...' : 'another commitment to abandon'}
+					{#if loading}
+						{$humorMode === 'dad' ? 'sealing my fate...' : 'Creating account...'}
+					{:else}
+						{$humorMode === 'dad' ? 'another commitment to abandon' : 'Create Account'}
+					{/if}
 				</button>
 			</form>
 
@@ -195,7 +210,7 @@
 			<p class="mt-6 text-center text-sm text-muted">
 				Already have an account?
 				<a href="/login" class="text-blue-500 hover:text-blue-600 font-medium">
-					fine, i'll stay
+					{$humorMode === 'dad' ? 'fine, i\'ll stay' : 'Sign In'}
 				</a>
 			</p>
 		</div>

@@ -3,6 +3,7 @@
 	import { notifications } from '$lib/stores/notifications';
 	import { mutation } from '@urql/svelte';
 	import { UPDATE_PROFILE_MUTATION, CHANGE_PASSWORD_MUTATION } from '$lib/graphql/mutations';
+	import { humorMode } from '$lib/stores/humor';
 
 	let activeTab = 'profile';
 
@@ -86,7 +87,9 @@
 </svelte:head>
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-	<h1 class="text-3xl font-bold text-primary mb-8">adjusting my excuses</h1>
+	<h1 class="text-3xl font-bold text-primary mb-8">
+		{$humorMode === 'dad' ? 'adjusting my excuses' : 'Settings'}
+	</h1>
 
 	<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 		<!-- Sidebar -->
@@ -98,21 +101,21 @@
 						class="w-full text-left px-4 py-2 rounded-lg transition-colors
 							{activeTab === 'profile' ? 'bg-blue-500 text-white' : 'text-muted hover:bg-surface-light'}"
 					>
-						who i pretend to be
+						{$humorMode === 'dad' ? 'who i pretend to be' : 'Profile'}
 					</button>
 					<button
 						on:click={() => activeTab = 'security'}
 						class="w-full text-left px-4 py-2 rounded-lg transition-colors
 							{activeTab === 'security' ? 'bg-blue-500 text-white' : 'text-muted hover:bg-surface-light'}"
 					>
-						locks on my cage
+						{$humorMode === 'dad' ? 'locks on my cage' : 'Security'}
 					</button>
 					<button
 						on:click={() => activeTab = 'notifications'}
 						class="w-full text-left px-4 py-2 rounded-lg transition-colors
 							{activeTab === 'notifications' ? 'bg-blue-500 text-white' : 'text-muted hover:bg-surface-light'}"
 					>
-						reminders of obligations
+						{$humorMode === 'dad' ? 'reminders of obligations' : 'Notifications'}
 					</button>
 				</nav>
 			</div>
@@ -122,7 +125,9 @@
 		<div class="lg:col-span-3">
 			{#if activeTab === 'profile'}
 				<div class="card p-6">
-					<h2 class="text-xl font-bold text-primary mb-6">who i pretend to be</h2>
+					<h2 class="text-xl font-bold text-primary mb-6">
+						{$humorMode === 'dad' ? 'who i pretend to be' : 'Profile Settings'}
+					</h2>
 
 					<form on:submit|preventDefault={handleUpdateProfile} class="space-y-6">
 						<div>
@@ -193,17 +198,25 @@
 						</div>
 
 						<button type="submit" class="btn btn-primary" disabled={updating}>
-							{updating ? 'sealing my fate...' : 'lock in more mistakes'}
+							{#if updating}
+								{$humorMode === 'dad' ? 'sealing my fate...' : 'Saving...'}
+							{:else}
+								{$humorMode === 'dad' ? 'lock in more mistakes' : 'Save Changes'}
+							{/if}
 						</button>
 					</form>
 				</div>
 
 			{:else if activeTab === 'security'}
 				<div class="card p-6">
-					<h2 class="text-xl font-bold text-primary mb-6">locks on my cage</h2>
+					<h2 class="text-xl font-bold text-primary mb-6">
+						{$humorMode === 'dad' ? 'locks on my cage' : 'Security Settings'}
+					</h2>
 
 					<form on:submit|preventDefault={handleChangePassword} class="space-y-6 mb-8">
-						<h3 class="text-lg font-semibold text-primary">hide my shame better</h3>
+						<h3 class="text-lg font-semibold text-primary">
+							{$humorMode === 'dad' ? 'hide my shame better' : 'Change Password'}
+						</h3>
 
 						<div>
 							<label for="currentPassword" class="block text-sm font-medium text-primary mb-2">
@@ -246,48 +259,72 @@
 						</div>
 
 						<button type="submit" class="btn btn-primary" disabled={updating}>
-							{updating ? 'updating my shame...' : 'hide my shame better'}
+							{#if updating}
+								{$humorMode === 'dad' ? 'updating my shame...' : 'Changing...'}
+							{:else}
+								{$humorMode === 'dad' ? 'hide my shame better' : 'Change Password'}
+							{/if}
 						</button>
 					</form>
 
 					<div class="border-t border-theme pt-8">
-						<h3 class="text-lg font-semibold text-primary mb-4">Two-Factor Authentication</h3>
+						<h3 class="text-lg font-semibold text-primary mb-4">
+							{$humorMode === 'dad' ? 'Extra Chains' : 'Two-Factor Authentication'}
+						</h3>
 						<p class="text-sm text-muted mb-4">
-							Add an extra layer of security to your account
+							{$humorMode === 'dad'
+								? 'Because one layer of security is never enough'
+								: 'Add an extra layer of security to your account'}
 						</p>
 						<button class="btn btn-secondary">
-							{$auth.user?.twoFactorEnabled ? 'one less thing holding me back' : 'double the regret'}
+							{#if $auth.user?.twoFactorEnabled}
+								{$humorMode === 'dad' ? 'one less thing holding me back' : 'Disable 2FA'}
+							{:else}
+								{$humorMode === 'dad' ? 'double the regret' : 'Enable 2FA'}
+							{/if}
 						</button>
 					</div>
 				</div>
 
 			{:else if activeTab === 'notifications'}
 				<div class="card p-6">
-					<h2 class="text-xl font-bold text-primary mb-6">reminders of obligations</h2>
+					<h2 class="text-xl font-bold text-primary mb-6">
+						{$humorMode === 'dad' ? 'reminders of obligations' : 'Notification Preferences'}
+					</h2>
 
 					<div class="space-y-4">
 						<label class="flex items-center justify-between">
-							<span class="text-sm text-primary">more ways to ignore you</span>
+							<span class="text-sm text-primary">
+								{$humorMode === 'dad' ? 'more ways to ignore you' : 'Email Notifications'}
+							</span>
 							<input type="checkbox" class="rounded border-theme" checked />
 						</label>
 
 						<label class="flex items-center justify-between">
-							<span class="text-sm text-primary">alerts to more junk</span>
+							<span class="text-sm text-primary">
+								{$humorMode === 'dad' ? 'alerts to more junk' : 'New Torrent Uploads'}
+							</span>
 							<input type="checkbox" class="rounded border-theme" checked />
 						</label>
 
 						<label class="flex items-center justify-between">
-							<span class="text-sm text-primary">people still talking to me</span>
+							<span class="text-sm text-primary">
+								{$humorMode === 'dad' ? 'people still talking to me' : 'Forum Replies'}
+							</span>
 							<input type="checkbox" class="rounded border-theme" checked />
 						</label>
 
 						<label class="flex items-center justify-between">
-							<span class="text-sm text-primary">guilt trips in my inbox</span>
+							<span class="text-sm text-primary">
+								{$humorMode === 'dad' ? 'guilt trips in my inbox' : 'Private Messages'}
+							</span>
 							<input type="checkbox" class="rounded border-theme" checked />
 						</label>
 					</div>
 
-					<button class="btn btn-primary mt-6">remember my poor choices</button>
+					<button class="btn btn-primary mt-6">
+						{$humorMode === 'dad' ? 'remember my poor choices' : 'Save Preferences'}
+					</button>
 				</div>
 			{/if}
 		</div>

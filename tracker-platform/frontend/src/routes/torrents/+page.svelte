@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { TORRENTS_QUERY } from '$lib/graphql/queries';
+	import { humorMode } from '$lib/stores/humor';
 	import TorrentCard from '$lib/components/torrent/TorrentCard.svelte';
 	import Loader from '$lib/components/common/Loader.svelte';
 
@@ -33,13 +34,44 @@
 		'Other'
 	];
 
-	const sortOptions = [
-		{ value: 'newest', label: 'fresh disappointments' },
-		{ value: 'oldest', label: 'ancient regrets' },
-		{ value: 'seeders', label: 'popular mistakes' },
-		{ value: 'leechers', label: 'shared misery' },
-		{ value: 'size', label: 'biggest wastes of space' },
-		{ value: 'name', label: 'alphabetical failures' }
+	// Category labels with dark dad alternatives
+	$: categoryLabels: Record<string, string> = {
+		'All': $humorMode === 'dad' ? "everything's terrible anyway" : 'All',
+		'Movies': $humorMode === 'dad' ? 'escapism attempts' : 'Movies',
+		'TV': $humorMode === 'dad' ? 'mind numbing' : 'TV Shows',
+		'Music': $humorMode === 'dad' ? 'noise to drown it out' : 'Music',
+		'Games': $humorMode === 'dad' ? 'wasting life points' : 'Games',
+		'Software': $humorMode === 'dad' ? 'digital mistakes' : 'Software',
+		'Books': $humorMode === 'dad' ? "words i won't read" : 'Books',
+		'Other': $humorMode === 'dad' ? 'miscellaneous regrets' : 'Other'
+	};
+
+	// Sort options with both normal and dad humor variants
+	$: sortOptions = [
+		{
+			value: 'newest',
+			label: $humorMode === 'dad' ? 'fresh disappointments' : 'Newest'
+		},
+		{
+			value: 'oldest',
+			label: $humorMode === 'dad' ? 'ancient regrets' : 'Oldest'
+		},
+		{
+			value: 'seeders',
+			label: $humorMode === 'dad' ? 'popular mistakes' : 'Most Seeders'
+		},
+		{
+			value: 'leechers',
+			label: $humorMode === 'dad' ? 'shared misery' : 'Most Leechers'
+		},
+		{
+			value: 'size',
+			label: $humorMode === 'dad' ? 'biggest wastes of space' : 'Largest Size'
+		},
+		{
+			value: 'name',
+			label: $humorMode === 'dad' ? 'alphabetical failures' : 'Name (A-Z)'
+		}
 	];
 
 	function handleSearch(e: Event) {
@@ -74,8 +106,12 @@
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	<div class="flex items-center justify-between mb-8">
-		<h1 class="text-3xl font-bold text-primary">wasting time like always</h1>
-		<a href="/upload" class="btn btn-primary">adding to my regrets</a>
+		<h1 class="text-3xl font-bold text-primary">
+			{$humorMode === 'dad' ? 'wasting time like always' : 'Browse Torrents'}
+		</h1>
+		<a href="/upload" class="btn btn-primary">
+			{$humorMode === 'dad' ? 'adding to my regrets' : 'Upload Torrent'}
+		</a>
 	</div>
 
 	<!-- Filters -->
@@ -87,9 +123,11 @@
 					type="text"
 					bind:value={search}
 					class="input flex-1"
-					placeholder="looking for meaning..."
+					placeholder={$humorMode === 'dad' ? 'looking for meaning...' : 'Search torrents...'}
 				/>
-				<button type="submit" class="btn btn-primary px-6">looking for meaning</button>
+				<button type="submit" class="btn btn-primary px-6">
+					{$humorMode === 'dad' ? 'looking for meaning' : 'Search'}
+				</button>
 			</div>
 		</form>
 
@@ -105,7 +143,7 @@
 							? 'bg-blue-500 text-white'
 							: 'bg-surface-light text-muted hover:bg-surface hover:text-primary'}"
 					>
-						{cat}
+						{categoryLabels[cat]}
 					</button>
 				{/each}
 			</div>
@@ -156,7 +194,7 @@
 					disabled={currentPage === 1}
 					class="btn btn-secondary"
 				>
-					back to worse
+					{$humorMode === 'dad' ? 'back to worse' : 'Previous'}
 				</button>
 
 				{#each Array(Math.min(5, torrents.pages)) as _, i}
@@ -166,7 +204,7 @@
 							on:click={() => changePage(pageNum)}
 							class="btn {pageNum === currentPage ? 'btn-primary' : 'btn-secondary'}"
 						>
-							level {pageNum}
+							{$humorMode === 'dad' ? `level ${pageNum}` : pageNum}
 						</button>
 					{/if}
 				{/each}
@@ -176,7 +214,7 @@
 					disabled={currentPage === torrents.pages}
 					class="btn btn-secondary"
 				>
-					forward into nothing
+					{$humorMode === 'dad' ? 'forward into nothing' : 'Next'}
 				</button>
 			</div>
 		{/if}
