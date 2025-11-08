@@ -86,7 +86,7 @@ Toggle between professional and darkly humorous modes with a single click. Your 
 - **Operating System**: Linux, macOS, or Windows 10/11 with WSL2
 
 **For Native Development:**
-- Rust 1.82+ toolchain (required for edition2024 support)
+- Rust 1.91+ toolchain (latest stable, required for edition2024 support)
 - Node.js 18+ and npm
 - PostgreSQL 17+
 - Redis 7.4+
@@ -330,7 +330,7 @@ Security is a top priority:
 ## 📊 Tech Stack
 
 ### Backend (Production-Ready)
-- **Language**: Rust 1.82+ (32,694 lines)
+- **Language**: Rust 1.91+ (32,694 lines) - Latest stable
 - **Web Framework**: Axum 0.7 (async, type-safe)
 - **Database**: PostgreSQL 17 (44 tables, 36 migrations, JSONB, full-text search)
 - **Cache**: Redis 7.4 + RedisJSON (session storage, rate limiting)
