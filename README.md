@@ -27,23 +27,11 @@ DaD-Beast is **not just another tracker** - it's a complete reimagination of wha
 
 | From Gazelle | From Ocelot | From Unit3d |
 |--------------|-------------|-------------|
-| ✅ Advanced permission system (29 permissions) | ✅ Event-driven architecture | ✅ Modern UI/UX |
+| ✅ Advanced permission system (20+ user classes) | ✅ Event-driven architecture | ✅ Modern UI/UX |
 | ✅ Music metadata & artist database | ✅ High-performance patterns (10k+ req/sec) | ✅ Media API integration |
 | ✅ Multi-tier caching | ✅ Database write batching | ✅ Rule-based bonus system |
 | ✅ Tag voting system | ✅ Peer selection algorithms | ✅ Comprehensive moderation |
 | ✅ Paranoia privacy controls | ✅ Atomic statistics | ✅ Real-time features |
-
-### 🎭 Unique Feature: Dark Dad Humor Mode
-
-**NEW!** DaD-Beast includes a fully functional "Dark Dad Humor" toggle that transforms the entire interface with resentful dad jokes and sarcastic navigation:
-
-- 🚬 "Home" becomes "back to the couch"
-- 🎯 "Torrents" becomes "the stuff i pretend to care about"
-- 💬 "Forums" becomes "complaining with strangers"
-- 🚪 "Logout" becomes "going out for a pack of cigs"
-- ...and 100+ more alternatives across the entire platform!
-
-Toggle between professional and darkly humorous modes with a single click. Your preference persists across sessions.
 
 ### 🚀 Performance
 
@@ -79,20 +67,9 @@ Toggle between professional and darkly humorous modes with a single click. Your 
 
 ### Prerequisites
 
-**For Development (Docker):**
 - Docker Desktop ([Download](https://www.docker.com/products/docker-desktop))
-- **4GB RAM minimum** (8GB recommended for smooth operation)
-- **10GB disk space** (for Docker images, database, and search indices)
-- **Operating System**: Linux, macOS, or Windows 10/11 with WSL2
-
-**For Native Development:**
-- Rust 1.91+ toolchain (latest stable, required for edition2024 support)
-- Node.js 18+ and npm
-- PostgreSQL 17+
-- Redis 7.4+
-- Meilisearch 1.10+
-- **8GB RAM minimum** (16GB recommended)
-- **20GB disk space**
+- 4GB RAM minimum
+- 10GB disk space
 
 ### Get Running in 3 Commands
 
@@ -160,34 +137,25 @@ See: [preseed-framework/README.md](./preseed-framework/README.md)
 
 ## 📊 Current Status
 
-**Phase**: MVP Integration Stage - Backend Production-Ready, Frontend 50% Complete
+**Phase**: Architecture Complete, Implementation In Progress
 
-DaD-Beast is currently at the **proof-of-concept / MVP integration stage**. The backend architecture is production-ready with all core services fully implemented (32,000+ lines of Rust). The frontend has foundational pages working but requires full backend integration and comprehensive testing.
-
-| Component | Status | Progress | Notes |
-|-----------|--------|----------|-------|
-| Architecture Design | ✅ Complete | 100% | All 11 services designed and implemented |
-| Database Schema | ✅ Complete | 100% | 44 tables, 36 migrations, fully normalized |
-| Backend Services | ✅ Complete | 90% | All services implemented, needs real-world testing |
-| Frontend UI | 🟡 In Progress | 50% | Basic pages work, integration incomplete |
-| **Dark Dad Humor** | ✅ **Complete** | **100%** | **Fully functional toggle across all pages** |
-| Authentication | ✅ Complete | 95% | Email/password + 2FA TOTP working |
-| BitTorrent Tracker | ✅ Complete | 85% | Protocol implemented, needs peer testing |
-| Search System | ✅ Complete | 90% | Meilisearch integrated, UI needs work |
-| Testing Suite | 🟡 Planned | 50% | Structure ready, execution incomplete |
-| API (GraphQL/REST) | ✅ Complete | 95% | Schema complete, endpoints structured |
-| Deployment (Docker) | ✅ Complete | 95% | docker-compose works |
-| Deployment (K8s) | ⏳ Planned | 0% | Not started |
+| Component | Status | Progress |
+|-----------|--------|----------|
+| Architecture Design | ✅ Complete | 100% |
+| Database Schema | ✅ Complete | 100% (40+ migrations) |
+| Backend Services | 🟡 In Progress | 70% |
+| Frontend UI | 🟡 In Progress | 60% |
+| Testing Suite | 🟡 In Progress | 80% coverage |
+| API Documentation | ✅ Complete | 100% |
+| Deployment (Docker) | ✅ Complete | 100% |
+| Deployment (K8s) | ⏳ Planned | 0% |
 
 **Latest Updates:**
-- ✅ **Dark Dad Humor mode fully implemented** - Toggle between normal and sarcastic navigation (Nov 2025)
 - ✅ Added comprehensive deployment guide
-- ✅ Added feature comparison table (DaD vs Gazelle vs Unit3d)
-- ✅ Completed all 11 backend services (32,694 lines of production Rust)
-- ✅ Implemented GraphQL + REST APIs with full schema
-- ✅ Added Prometheus + Grafana monitoring setup
-- ✅ Theme switching (Dark/Light/Aero/Coffee/Grey modes)
-- ✅ Dad joke generator for UX enhancement
+- ✅ Added feature comparison table
+- ✅ Completed CI/CD pipeline (10 jobs)
+- ✅ Implemented GraphQL API
+- ✅ Added Prometheus + Grafana monitoring
 
 ---
 
@@ -207,58 +175,33 @@ DaD-Beast is currently at the **proof-of-concept / MVP integration stage**. The 
 
 ## 🛣️ Roadmap
 
-### Phase 1: MVP Backend ✅ (Completed)
-- ✅ Core infrastructure setup (Docker, services)
-- ✅ Database schema (44 tables, 36 migrations)
-- ✅ Authentication service (email/password + 2FA TOTP)
-- ✅ BitTorrent tracker (announce/scrape protocols)
-- ✅ Torrent management (upload, validation, moderation)
-- ✅ All 11 backend services (32,694 lines of Rust)
+### Phase 1: MVP ✅ (Months 1-3)
+- ✅ Core infrastructure setup
+- ✅ Database schema
+- ✅ Authentication service
+- 🟡 BitTorrent tracker (in progress)
+- 🟡 Basic torrent management
+- 🟡 Simple web UI
 
-### Phase 2: Frontend Integration 🟡 (Current - 50% Complete)
-- ✅ Core UI components (Header, Footer, Cards)
-- ✅ **Dark Dad Humor mode** (fully functional toggle)
-- ✅ Theme switching (5 themes)
-- ✅ Login/Register pages
-- ✅ Torrent browsing with filters
-- 🟡 Upload interface (UI ready, integration needed)
-- 🟡 Search page (UI ready, backend wiring needed)
-- 🟡 User settings (UI ready, save functionality needed)
-- ⏳ Admin panel
-- ⏳ Real-time notifications
+### Phase 2: Community Features (Months 4-6)
+- ⏳ Forum system
+- ⏳ Chat & messaging
+- ⏳ Moderation tools
+- ⏳ User profiles & stats
+- ⏳ Search functionality
 
-### Phase 3: Community Features ⏳ (Next)
-- ✅ Forum backend (tables & logic complete)
-- ✅ Chat infrastructure (WebSocket ready)
-- 🟡 Forum UI (structure exists, posting incomplete)
-- 🟡 Chat UI (components exist, real-time sync needed)
-- ⏳ Private messaging UI
-- ⏳ User profiles page
-- ⏳ Moderation tools UI
-
-### Phase 4: Testing & Polish ⏳ (Upcoming)
-- 🟡 Unit tests (structure ready, needs execution)
-- 🟡 Integration tests (7 test files written)
-- ⏳ E2E tests (Playwright configured)
-- ⏳ Performance testing
-- ⏳ Security audit
-- ⏳ Load testing (10k+ req/sec target)
-
-### Phase 5: Advanced Features ⏳ (Future)
-- ⏳ ML-based recommendations
-- ⏳ Advanced analytics & dashboards
+### Phase 3: Advanced Features (Months 7-12)
+- ⏳ ML recommendations
+- ⏳ Advanced analytics
 - ⏳ Mobile app (React Native)
 - ⏳ Plugin system
 - ⏳ API marketplace
-- ⏳ Magnet link support
-- ⏳ DHT/PEX integration
 
-### Phase 6: Scale & Production ⏳ (Long-term)
-- ⏳ Kubernetes deployment manifests
+### Phase 4: Scale & Optimization (Ongoing)
+- ⏳ Kubernetes deployment
 - ⏳ Multi-region replication
-- ⏳ CDN integration
-- ⏳ Advanced monitoring & alerting
-- ⏳ Security hardening & penetration testing
+- ⏳ Performance optimization
+- ⏳ Security hardening
 
 ---
 
@@ -329,34 +272,30 @@ Security is a top priority:
 
 ## 📊 Tech Stack
 
-### Backend (Production-Ready)
-- **Language**: Rust 1.91+ (32,694 lines) - Latest stable
-- **Web Framework**: Axum 0.7 (async, type-safe)
-- **Database**: PostgreSQL 17 (44 tables, 36 migrations, JSONB, full-text search)
-- **Cache**: Redis 7.4 + RedisJSON (session storage, rate limiting)
-- **Search**: Meilisearch 1.10+ (integrated, 9 filter types)
-- **Message Queue**: Apache Kafka (planned for events)
-- **API**: REST + GraphQL (async-graphql, full schema implemented)
-- **BitTorrent**: Custom announce/scrape protocol implementation
+### Backend
+- **Language**: Rust 1.75+
+- **Web Framework**: Axum 0.7 (async)
+- **Database**: PostgreSQL 17 + TimescaleDB
+- **Cache**: Redis 7.4 + RedisJSON
+- **Search**: Meilisearch 1.10+
+- **Message Queue**: Apache Kafka
+- **API**: REST + GraphQL (async-graphql)
 
-### Frontend (50% Complete)
-- **Framework**: SvelteKit 2.0 (SSR + CSR)
-- **Language**: TypeScript 5.3 (13,500+ lines)
-- **Styling**: TailwindCSS 4 (custom themes)
+### Frontend
+- **Framework**: SvelteKit 2.0
+- **Language**: TypeScript 5.3
+- **Styling**: TailwindCSS 4
 - **Build Tool**: Vite 5.0
-- **Testing**: Vitest + Playwright (configured, tests written)
-- **GraphQL Client**: @urql/svelte (integrated)
-- **State Management**: Svelte stores (auth, theme, humor, notifications)
-- **Features**: 5 themes, dark dad humor mode, dad joke generator
+- **Testing**: Vitest + Playwright
+- **GraphQL Client**: Apollo Client
 
-### Infrastructure (Docker-Ready)
-- **Containerization**: Docker (multi-stage builds, 7 services)
-- **Orchestration**: Kubernetes (planned, not started)
-- **Reverse Proxy**: Traefik v3 (configured)
-- **Monitoring**: Prometheus + Grafana (dashboards ready)
-- **Tracing**: OpenTelemetry (planned)
-- **CI/CD**: GitHub Actions (configured)
-- **Development**: docker-compose (fully working)
+### Infrastructure
+- **Containerization**: Docker (multi-stage builds)
+- **Orchestration**: Kubernetes (planned)
+- **Reverse Proxy**: Traefik v3
+- **Monitoring**: Prometheus + Grafana
+- **Tracing**: OpenTelemetry
+- **CI/CD**: GitHub Actions
 
 ---
 
@@ -393,12 +332,6 @@ If you find this project useful, please consider giving it a star! ⭐
 
 ---
 
-**Made with ❤️ and Rust** (and a bit of dark dad humor 🚬)
+**Made with ❤️ and Rust**
 
-**Status**: 🟡 MVP Integration Stage | **Version**: 0.1.0-alpha | **Backend**: 90% Production-Ready | **Frontend**: 50% Complete | **Last Updated**: 2025-11-07
-
----
-
-## 🎭 Experience the Dark Dad Humor
-
-Try the live demo (coming soon) and toggle between professional mode and resentful dad mode to see all 100+ sarcastic alternatives in action!
+**Status**: 🟡 Active Development | **Version**: 0.1.0-alpha | **Last Updated**: 2025-11-07

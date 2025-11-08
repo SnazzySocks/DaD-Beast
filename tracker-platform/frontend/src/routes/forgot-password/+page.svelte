@@ -2,8 +2,6 @@
 	import { notifications } from '$lib/stores/notifications';
 	import { mutation } from '@urql/svelte';
 	import { FORGOT_PASSWORD_MUTATION } from '$lib/graphql/mutations';
-	import { humorMode } from '$lib/stores/humor';
-	import HumorToggle from '$lib/components/common/HumorToggle.svelte';
 
 	let email = '';
 	let loading = false;
@@ -42,9 +40,6 @@
 
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
 	<div class="w-full max-w-md">
-		<!-- Humor Toggle -->
-		<HumorToggle variant="default" />
-
 		<div class="card p-8">
 			<div class="flex justify-center mb-8">
 				<div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -53,13 +48,9 @@
 			</div>
 
 			{#if !submitted}
-				<h1 class="text-2xl font-bold text-center text-primary mb-4">
-					{$humorMode === 'dad' ? 'forgot why i\'m here too' : 'Reset Password'}
-				</h1>
+				<h1 class="text-2xl font-bold text-center text-primary mb-4">Reset Password</h1>
 				<p class="text-center text-muted mb-8">
-					{$humorMode === 'dad'
-						? 'Give us your email and we\'ll pretend to help'
-						: 'Enter your email address and we\'ll send you a link to reset your password.'}
+					Enter your email address and we'll send you a link to reset your password.
 				</p>
 
 				<form on:submit|preventDefault={handleSubmit} class="space-y-6">
@@ -79,19 +70,13 @@
 					</div>
 
 					<button type="submit" class="w-full btn btn-primary" disabled={loading}>
-						{#if loading}
-							{$humorMode === 'dad' ? 'pretending to help...' : 'Sending...'}
-						{:else}
-							{$humorMode === 'dad' ? 'start over (again)' : 'Send Reset Link'}
-						{/if}
+						{loading ? 'Sending...' : 'Send Reset Link'}
 					</button>
 				</form>
 
 				<p class="mt-6 text-center text-sm text-muted">
-					{$humorMode === 'dad' ? 'Remembered your shame?' : 'Remember your password?'}
-					<a href="/login" class="text-blue-500 hover:text-blue-600 font-medium">
-						{$humorMode === 'dad' ? 'crawling back' : 'Sign in'}
-					</a>
+					Remember your password?
+					<a href="/login" class="text-blue-500 hover:text-blue-600 font-medium">Sign in</a>
 				</p>
 			{:else}
 				<div class="text-center">
@@ -101,18 +86,12 @@
 						</svg>
 					</div>
 
-					<h2 class="text-xl font-bold text-primary mb-2">
-						{$humorMode === 'dad' ? 'Check your inbox (if you can find it)' : 'Check Your Email'}
-					</h2>
+					<h2 class="text-xl font-bold text-primary mb-2">Check Your Email</h2>
 					<p class="text-muted mb-6">
-						{$humorMode === 'dad'
-							? `Sent something to ${email} that you'll probably ignore`
-							: `We've sent a password reset link to ${email}`}
+						We've sent a password reset link to <strong>{email}</strong>
 					</p>
 
-					<a href="/login" class="btn btn-primary">
-						{$humorMode === 'dad' ? 'crawling back' : 'Back to Login'}
-					</a>
+					<a href="/login" class="btn btn-primary">Back to Login</a>
 				</div>
 			{/if}
 		</div>

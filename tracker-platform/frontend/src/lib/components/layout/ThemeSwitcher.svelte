@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { currentTheme, themes, type Theme } from '$lib/stores/theme';
-	import { humorMode } from '$lib/stores/humor';
 
 	let isOpen = false;
 
@@ -20,15 +19,6 @@
 		light: '☀️',
 		aero: '💎',
 		coffee: '☕'
-	};
-
-	// Dark dad alternatives for theme labels
-	const dadThemeLabels: Record<Theme, { label: string; description: string }> = {
-		dark: { label: 'like my mood', description: 'Emotional darkness' },
-		grey: { label: 'colorless existence', description: 'Dull reality' },
-		light: { label: 'too bright for my soul', description: "Can't handle optimism" },
-		aero: { label: 'trying to feel something', description: 'Desperate for sensation' },
-		coffee: { label: 'the only thing keeping me going', description: 'Caffeine dependency' }
 	};
 </script>
 
@@ -55,7 +45,6 @@
 			</div>
 
 			{#each Object.entries(themes) as [key, theme]}
-				{@const dadTheme = dadThemeLabels[key as Theme]}
 				<button
 					on:click={() => selectTheme(key as Theme)}
 					class="w-full px-4 py-3 text-left hover:bg-surface-light transition-colors flex items-center justify-between
@@ -64,12 +53,8 @@
 					<div class="flex items-center space-x-3">
 						<span class="text-2xl">{themeIcons[key as Theme]}</span>
 						<div>
-							<p class="text-sm font-medium text-primary">
-								{$humorMode === 'dad' ? dadTheme.label : theme.label}
-							</p>
-							<p class="text-xs text-muted">
-								{$humorMode === 'dad' ? dadTheme.description : theme.description}
-							</p>
+							<p class="text-sm font-medium text-primary">{theme.label}</p>
+							<p class="text-xs text-muted">{theme.description}</p>
 						</div>
 					</div>
 					{#if $currentTheme === key}

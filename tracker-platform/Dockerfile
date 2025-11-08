@@ -1,7 +1,7 @@
 # ================================
 # Stage 1: Build Dependencies
 # ================================
-FROM rust:1.91-slim-bookworm AS chef
+FROM rust:1.75-slim-bookworm AS chef
 
 # Install cargo-chef for dependency caching
 RUN cargo install cargo-chef
@@ -107,7 +107,7 @@ CMD ["/app/tracker-platform"]
 # ================================
 # Stage 6: Development (Optional)
 # ================================
-FROM rust:1.91-slim-bookworm AS development
+FROM rust:1.75-slim-bookworm AS development
 
 # Install development dependencies
 RUN apt-get update && apt-get install -y \

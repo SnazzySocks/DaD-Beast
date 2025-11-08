@@ -1,81 +1,26 @@
 <script lang="ts">
-	import { humorMode } from '$lib/stores/humor';
-
 	const currentYear = new Date().getFullYear();
 
-	// Footer links with both normal and dad humor variants
-	$: footerLinks = {
+	const footerLinks = {
 		about: [
-			{
-				normalLabel: 'About Us',
-				dadLabel: "why this exists (we don't know either)",
-				href: '/about'
-			},
-			{
-				normalLabel: 'FAQ',
-				dadLabel: 'questions with no good answers',
-				href: '/faq'
-			},
-			{
-				normalLabel: 'Rules',
-				dadLabel: 'things that bind us',
-				href: '/rules'
-			},
-			{
-				normalLabel: 'Contact',
-				dadLabel: 'bother someone else',
-				href: '/contact'
-			}
+			{ label: "why this exists (we don't know either)", href: '/about' },
+			{ label: 'questions with no good answers', href: '/faq' },
+			{ label: 'things that bind us', href: '/rules' },
+			{ label: 'bother someone else', href: '/contact' }
 		],
 		community: [
-			{
-				normalLabel: 'Forums',
-				dadLabel: 'where i go to argue',
-				href: '/forums'
-			},
-			{
-				normalLabel: 'Chat',
-				dadLabel: 'words i can\'t take back',
-				href: '/chat'
-			},
-			{
-				normalLabel: 'Wiki',
-				dadLabel: 'collective procrastination',
-				href: '/wiki'
-			},
-			{
-				normalLabel: 'Blog',
-				dadLabel: 'rambling nobody reads',
-				href: '/blog'
-			}
+			{ label: 'where i go to argue', href: '/forums' },
+			{ label: 'words i can\'t take back', href: '/chat' },
+			{ label: 'collective procrastination', href: '/wiki' },
+			{ label: 'rambling nobody reads', href: '/blog' }
 		],
 		help: [
-			{
-				normalLabel: 'Getting Started',
-				dadLabel: 'first steps toward regret',
-				href: '/help/getting-started'
-			},
-			{
-				normalLabel: 'Upload Guide',
-				dadLabel: 'how to contribute to the mess',
-				href: '/help/upload-guide'
-			},
-			{
-				normalLabel: 'Download Guide',
-				dadLabel: 'taking without giving back',
-				href: '/help/download-guide'
-			},
-			{
-				normalLabel: 'API Documentation',
-				dadLabel: 'technical excuses',
-				href: '/api/docs'
-			}
+			{ label: 'first steps toward regret', href: '/help/getting-started' },
+			{ label: 'how to contribute to the mess', href: '/help/upload-guide' },
+			{ label: 'taking without giving back', href: '/help/download-guide' },
+			{ label: 'technical excuses', href: '/api/docs' }
 		]
 	};
-
-	$: privacyLabel = $humorMode === 'dad' ? 'how we\'ll fail to protect you' : 'Privacy Policy';
-	$: termsLabel = $humorMode === 'dad' ? 'legal reasons to be stuck here' : 'Terms of Service';
-	$: dmcaLabel = $humorMode === 'dad' ? 'lawyers ruining everything' : 'DMCA';
 </script>
 
 <footer class="bg-surface border-t border-theme mt-auto">
@@ -101,7 +46,7 @@
 					{#each footerLinks.about as link}
 						<li>
 							<a href={link.href} class="text-sm text-muted hover:text-primary transition-colors">
-								{$humorMode === 'dad' ? link.dadLabel : link.normalLabel}
+								{link.label}
 							</a>
 						</li>
 					{/each}
@@ -115,7 +60,7 @@
 					{#each footerLinks.community as link}
 						<li>
 							<a href={link.href} class="text-sm text-muted hover:text-primary transition-colors">
-								{$humorMode === 'dad' ? link.dadLabel : link.normalLabel}
+								{link.label}
 							</a>
 						</li>
 					{/each}
@@ -129,7 +74,7 @@
 					{#each footerLinks.help as link}
 						<li>
 							<a href={link.href} class="text-sm text-muted hover:text-primary transition-colors">
-								{$humorMode === 'dad' ? link.dadLabel : link.normalLabel}
+								{link.label}
 							</a>
 						</li>
 					{/each}
@@ -145,13 +90,13 @@
 
 			<div class="flex space-x-6 mt-4 sm:mt-0">
 				<a href="/privacy" class="text-sm text-muted hover:text-primary transition-colors">
-					{privacyLabel}
+					how we'll fail to protect you
 				</a>
 				<a href="/terms" class="text-sm text-muted hover:text-primary transition-colors">
-					{termsLabel}
+					legal reasons to be stuck here
 				</a>
 				<a href="/dmca" class="text-sm text-muted hover:text-primary transition-colors">
-					{dmcaLabel}
+					lawyers ruining everything
 				</a>
 			</div>
 		</div>
