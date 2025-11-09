@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'claude/**'
     paths:
       - 'tracker-platform/**/*.rs'
       - 'tracker-platform/**/*.md'

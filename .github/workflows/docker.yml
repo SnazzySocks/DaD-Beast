@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - 'claude/**'
     tags:
       - 'v*.*.*'
   pull_request:

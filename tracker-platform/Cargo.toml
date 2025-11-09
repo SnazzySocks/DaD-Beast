@@ -21,22 +21,22 @@ license = "MIT"
 authors = ["Unified Tracker Platform Team"]
 
 [workspace.dependencies]
-# Async runtime
-tokio = { version = "1.35", features = ["full"] }
+# Async runtime - Updated to latest 1.x for security and performance
+tokio = { version = "1.41", features = ["full"] }
 tokio-util = "0.7"
 
-# Web framework
+# Web framework - Staying on 0.7.x for stability
 axum = { version = "0.7", features = ["macros", "ws"] }
 axum-extra = { version = "0.9", features = ["typed-header"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip"] }
 
-# Database
+# Database - Staying on 0.7.x for stability (0.8 has breaking changes)
 sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "uuid", "chrono", "json", "migrate"] }
 sea-query = "0.30"
 sea-query-binder = { version = "0.5", features = ["sqlx-postgres"] }
 
-# Redis
+# Redis - Staying on 0.24.x for stability
 redis = { version = "0.24", features = ["tokio-comp", "connection-manager", "cluster", "json"] }
 
 # Serialization
