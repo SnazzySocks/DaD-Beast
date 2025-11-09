@@ -26,6 +26,7 @@ on:
   push:
     branches:
       - main
+      - 'claude/**'
     paths:
       - 'tracker-platform/migrations/**'
 
